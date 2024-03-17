@@ -20,7 +20,7 @@ system_type = platform.system()
 node=None 
 default_ip='0.0.0.0'
 default_port=8635
-abut_nodes=[]
+abut_nodes={}
 caller_locals=None
 caller_functions=None
 
@@ -112,19 +112,65 @@ def get_computer_name():
   myname, _ = process.communicate()
   return myname.decode("utf-8").strip()
 
-def getfunctions(vlocals):
-  global caller_locals
-  caller_locals = vlocals
-  caller_functions = [name for name, value in caller_locals.items() if callable(value)]
-  return caller_functions
 
-def run_function(lf, fname, *args, **kwargs):
-  try:
-    result=lf[fname](*args, **kwargs)
-    return result
-  except Exception as e:
-    print("error",e)
-    return {"error",e}
+
+
+# self.identity["abut_nodes"] = neighbors
+
+
+# url = "http://10.10.27.110:8000"
+# img_file = "test_01.jpg"
+
+# try:
+#     with open(img_file, "rb") as image_file:
+#         base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+#     data = {
+#         "tool": "sr",
+#         "scale": 4.0,
+#         "imagedata": base64_image
+#     }
+#     encoded_image_data = response_json.get("imagedata", "")
+#     if encoded_image_data:
+#         with open("test_01_sr1.jpg", "wb") as final_image_file:
+#             final_image_file.write(base64.b64decode(encoded_image_data))
+#         print("Saved.")
+
+# except Exception as e:
+#     print(f"Error: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def call_local(call=None,args=''):
+#   if call:
+#     if caller_functions and call in caller_functions:
+#       global caller_locals
+#       result=run_function(caller_locals, self.call, self.args)
+#       elif self.call in self.capabilities:
+#         result=run_function(local_variables,self.call, self.args)
+#       else:
+#         result=None
+
+
+# def call_remote(id=None, fname, *args, **kwargs):
+#   try:
+#     result=lf[fname](*args, **kwargs)
+#     return result
+#   except Exception as e:
+#     print("error",e)
+#     return {"error",e}
+
+
 
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Functions Specific ├────────────
 try:
@@ -204,6 +250,83 @@ def msg(message,language='English'):
   speak (message,language)
   notif (message)
 
+#─────────────────────────────────────────────────────────────────────────────────────────┤ Runners ├────────────
+
+def getfunctions(vlocals):
+  global caller_locals
+  caller_locals = vlocals
+  caller_functions = [name for name, value in caller_locals.items() if callable(value)]
+  return caller_functions
+
+def run_function(lf, fname, params):
+  params = [str(params)] if not isinstance(params, list) else params
+  try:
+    target_function = lf.get(fname)
+    if target_function is None:
+      raise ValueError(f"Function '{fname}' not found in locals")
+    result = target_function(*params)
+    return result
+  except Exception as e:
+    print("Error:", e)
+    return {"error": str(e)}
+
+
+def msg_abut(*args):
+  abut_id = args[0] if len(args) > 0 else None
+  call_name = args[1] if len(args) > 1 else None
+  call_args = args[2:] if len(args) > 2 else []
+  json_in = {"call": call_name, "args": call_args}
+  print (json_in)
+  global node
+  abut_info=node.identity.get('abut_nodes',{}).get(abut_id,{})
+  abut_ip=abut_info.get('ip','')
+  abut_port=abut_info.get('port','')
+
+  if abut_info and abut_ip and abut_port:
+    abut_url=f'http://{abut_ip}:{abut_port}/'
+    print(abut_url)
+    headers = {"Content-Type": "application/json"}
+    abut_response=None
+    try:
+      response = requests.post(abut_url, json=json_in, headers=headers)
+      response.raise_for_status()
+      response_json = response.json()
+      abut_response = response_json.get('result',None)
+    except requests.exceptions.RequestException as e:
+      print("Error:", e)
+      return {"error": str(e)}
+    return {abut_id:abut_response}
+
+
+def autocall(tid, fcall, args):
+  args = [str(args)] if not isinstance(args, list) else args
+
+  global caller_locals
+  global node
+
+  print (fcall)
+  if fcall in node.identity.get('capabilities',[]):
+    if tid == node.id and fcall:
+      if caller_functions and fcall in caller_functions:
+        result=run_function(caller_locals, fcall, args)
+      elif fcall in node.capabilities:
+        result=run_function(local_variables, fcall, args)
+      else:
+        result=None
+  elif fcall:
+    abuts=node.identity.get('abut_nodes',{})
+    capable = []
+    for abutID, properties in abuts.items():
+      if fcall in properties.get('capabilities', []):
+        capable.append(abutID)
+    if capable:
+      print('msg_abut',[capable[0],fcall,* args])
+      result=msg_abut(*[capable[0],fcall,* args])
+      #.get('result',None)
+      return result
+  else:
+    pass
+
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Net ├────────────
 
 def test_portopen(host='127.0.0.1', port=8635, timeout=0.5):
@@ -220,7 +343,7 @@ def get_node_status(url, max_attempts = 10, timeout=2):
   node_id = ""
   for attempt in range(1, max_attempts + 1):
     try:
-      print(url)
+#      print(url)
       response = requests.get(url+'/status/', timeout=timeout)
       response.raise_for_status()
       response_json = response.json()
@@ -275,7 +398,6 @@ def check_health(url=f'http://localhost:{default_port}',max_attempts = 10, timeo
     print(f'Connection failed with {url}')
     return False
 
-
 def find_net_nodes(port=default_port):
     nodes = {}
     nodes_ip_candidate = scan_lan()
@@ -292,13 +414,13 @@ def find_net_nodes(port=default_port):
           if "abut_nodes" in node_status:
             del node_status["abut_nodes"]
           nodes.setdefault(node_id, node_status)
+    #frame(["Found nodes: "] + list(nodes.keys()),'YELLOW')
     return nodes
-
 
 #───────────────────────────────────────────────────────────────────────────────────┤ List local functions ├────────────
 local_variables = locals()
 all_local_functions = [name for name, value in local_variables.items() if callable(value)]
-not4share=["split_long_string","start","finish","get_computer_name","getfunctions","run_function","timeout_handler","test_portopen","get_node_status","scan_lan","check_health","find_net_nodes","mkhtml","Node"]
+not4share=["split_long_string","start","finish","get_computer_name","getfunctions","run_function","timeout_handler","test_portopen","get_node_status","scan_lan","check_health","find_net_nodes","mkhtml","Node","msg_abut","autocall"]
 local_functions = [funkcja for funkcja in all_local_functions if funkcja not in not4share]
 
 #───────────────────────────────────────────────────────────────────────────────────┤ HTTP API ├────────────
@@ -406,10 +528,11 @@ class Node:
     frame(f"Node_Init: {self.id}",'PINK')
 
   def json2json(self,json_in):
+    debug=True
     self.json_out={}
-    #self.identity
-    # print('Received:')
-    # frame(json.dumps(json_in, indent=2),'ORANGE')
+    if debug and json_in:
+      print('Received:')
+      frame(json.dumps(json_in, indent=2).split('\n'),'ORANGE')
 #─────────────────────────────────┤ Response Logic ├────────────
     self.json_out.update(self.identity)
     self.json_out.update({'healthy': self.healthy})
@@ -417,37 +540,32 @@ class Node:
     self.message = json_in.get('message', '')
     self.call = json_in.get('call', '')
     self.args = json_in.get('args', '')
-    print (self.call)
-    print (self.args)
-    result=None
-    if self.call:
-      if caller_functions and self.call in caller_functions:
-        global caller_locals
-        result=run_function(caller_locals, self.call, self.args)
-      elif self.call in self.capabilities:
-        result=run_function(local_variables,self.call, self.args)
-      else:
-        result=None
-      self.json_out.update({'result': result})
+    self.tid = json_in.get('id', self.id)
+    self.busy=True
+    result=autocall(self.tid, self.call, self.args) if json_in else None
+    self.busy=False
+    self.json_out.update({'result': result})
 #─────────────────────────────────┤ / Response Logic ├────────────
-
-    # print('Sending:')
-    # frame(json.dumps(self.json_out, indent=2),'LBLUE')
+    if debug and json_in:
+      print('Sending:')
+      frame(json.dumps(self.json_out, indent=2).split('\n'),'LBLUE')
     return self.json_out
   
   def process(self):
     while True:
-      time.sleep(5)
-      try:
-        nodes = find_net_nodes()
-        neighbors = [{zignode: nodes[zignode]} for zignode in nodes if zignode != self.id]
-        if neighbors:
-          self.identity["abut_nodes"] = neighbors
-        else:
-          self.identity["abut_nodes"] = []
-      except Exception as e:
-        print(e)
-    time.sleep(90)
+      time.sleep(2)
+      if not self.busy:
+        try:
+          nodes = find_net_nodes()
+          neighbors = {zignode: nodes[zignode] for zignode in nodes if zignode != self.id}
+          if neighbors:
+            self.identity["abut_nodes"] = neighbors
+          else:
+            self.identity["abut_nodes"] = {}
+        except Exception as e:
+          self.identity["abut_nodes"] = {}
+          print(e)
+      time.sleep(18)
 
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Http Handler ├────────────
 
@@ -455,6 +573,9 @@ class NodeHttp(http.server.BaseHTTPRequestHandler):
   def __init__(self, *args, **kwargs):
     self.node = kwargs.pop('node', None)
     super().__init__(*args, **kwargs)
+  
+  def log_message(self, format, *args):
+    pass
 
   def do_GET(self):
     if self.path in ('/', '/index.html', '/index.htm'):
