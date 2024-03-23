@@ -1,23 +1,26 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import os, sys,  platform,  subprocess,  tempfile,  time,  datetime,  uuid,  json,  base64,  io,  re,  http.server,  urllib.parse, ipaddress, threading, random, math, socket, signal, xml.etree.ElementTree as ET
+scan_enable=True
+comm_enable=True
 try:
-  import requests, socks
+  import requests
 except Exception as e:
-  print(f'Error: {e}')
-  exit (2)
+  comm_enable=False
 try:
-  import argparse
+  import socks
+except Exception as e:
+  scan_enable=False
+try:
   import netifaces
 except Exception as e:
-  print(f'Error: {e}')
-  exit (2)
+  scan_enable=False
 #──────────────────────────────────────────────────────────────────────────────────────────────────┤ Generic ├────────────
 start_time=time.time()
 __MyName__=os.path.split(sys.argv[0])[1]
 root_dir=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 system_type = platform.system()
-node=None 
+node=None
 default_ip='0.0.0.0'
 default_port=8635
 abut_nodes={}
@@ -112,67 +115,8 @@ def get_computer_name():
   myname, _ = process.communicate()
   return myname.decode("utf-8").strip()
 
-
-
-
-# self.identity["abut_nodes"] = neighbors
-
-
-# url = "http://10.10.27.110:8000"
-# img_file = "test_01.jpg"
-
-# try:
-#     with open(img_file, "rb") as image_file:
-#         base64_image = base64.b64encode(image_file.read()).decode("utf-8")
-
-#     data = {
-#         "tool": "sr",
-#         "scale": 4.0,
-#         "imagedata": base64_image
-#     }
-#     encoded_image_data = response_json.get("imagedata", "")
-#     if encoded_image_data:
-#         with open("test_01_sr1.jpg", "wb") as final_image_file:
-#             final_image_file.write(base64.b64decode(encoded_image_data))
-#         print("Saved.")
-
-# except Exception as e:
-#     print(f"Error: {e}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def call_local(call=None,args=''):
-#   if call:
-#     if caller_functions and call in caller_functions:
-#       global caller_locals
-#       result=run_function(caller_locals, self.call, self.args)
-#       elif self.call in self.capabilities:
-#         result=run_function(local_variables,self.call, self.args)
-#       else:
-#         result=None
-
-
-# def call_remote(id=None, fname, *args, **kwargs):
-#   try:
-#     result=lf[fname](*args, **kwargs)
-#     return result
-#   except Exception as e:
-#     print("error",e)
-#     return {"error",e}
-
-
-
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Functions Specific ├────────────
+#────────────┤ Notification ├────────────
 try:
   if platform.system() == "Windows":
     import plyer
@@ -198,57 +142,67 @@ try:
       frame ([message],'RED')
       return "On screen notification disabled"
 except Exception as e:
-  print(e)
+  pass
 
-def speak(message,language='English',rate=2.5,volume=80):
-  if platform.system() == "Windows":
-    voice=None
-    voices = [v.GetDescription() for v in win32com.client.Dispatch("SAPI.SpVoice").GetVoices()]
-    print (voices)
-    for vo in voices:
-      if 'Eng' in vo and 'Aria' in vo:
-        voice=vo
-      elif language in vo:
-        voice=vo 
-    
-    for vo in voices:
-      if language in vo:
-        voice=vo 
-    print (f'Selected: {cc["GREEN"]} {voice}{cc["NOCOLOR"]}')
-    if voice:
-      speaker = win32com.client.Dispatch("SAPI.SpVoice")
-      speaker.Voice = next(vo for vo in speaker.GetVoices() if vo.GetDescription() == voice)
-      speaker.Rate = rate
-      speaker.Volume = volume
+#────────────┤ Speak ├────────────
+if platform.system() == "Linux":
+  #In linux we will use rhvoice
+  try:
+    subprocess.run(['which', 'RHVoice-test'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    def speak(message,language='English',rate=2.5,volume=80):
+      if language.lower() == "polish":
+        rhvoice_voice = "Alicja"
+      elif language.lower() == "english":
+        rhvoice_voice = "lyubov"
+      else:
+        frame ([message],'RED')
+        return False
       try:
-        speaker.Speak(message)
+        subprocess.run(["RHVoice-test", "-p", rhvoice_voice, "-v",str(volume), "-r", str(int(rate*0.6*100)), ], input=message, text=True)
+        #time.sleep(0)
+        return True
       except Exception as e:
         print(f'{cc["RED"]}Error:{cc["NOCOLOR"]} {e}')
-    else:
-      print (f'{cc["RED"]}No voice for: {language}{cc["NOCOLOR"]}')
+  except subprocess.CalledProcessError:
+    pass
+  
+if platform.system() == "Windows":
+  if win32com.client:
+    def speak(message,language='English',rate=2.5,volume=80):
+      voice=None
+      voices = [v.GetDescription() for v in win32com.client.Dispatch("SAPI.SpVoice").GetVoices()]
+      print (voices)
       for vo in voices:
-        print (vo)
-      frame ([message],'RED')  
-  elif platform.system() == "Linux":
-    if language == "Polish":
-      rhvoice_voice = "Alicja"
-    elif language == "English":
-      rhvoice_voice = "lyubov"
-    try:
-      subprocess.run(["RHVoice-test", "-p", rhvoice_voice, "-v",str(volume), "-r", str(int(rate*0.6*100)), ], input=message, text=True)
-      return True
-      #time.sleep(0)
-
-    except Exception as e:
-      print(f'{cc["RED"]}Error:{cc["NOCOLOR"]} {e}')
-  else:
-    frame ([message],'RED')
-    return False
+        if 'Eng' in vo and 'Aria' in vo:
+          voice=vo
+        elif language in vo:
+          voice=vo 
+      
+      for vo in voices:
+        if language in vo:
+          voice=vo 
+      print (f'Selected: {cc["GREEN"]} {voice}{cc["NOCOLOR"]}')
+      if voice:
+        speaker = win32com.client.Dispatch("SAPI.SpVoice")
+        speaker.Voice = next(vo for vo in speaker.GetVoices() if vo.GetDescription() == voice)
+        speaker.Rate = rate
+        speaker.Volume = volume
+        try:
+          speaker.Speak(message)
+        except Exception as e:
+          print(f'{cc["RED"]}Error:{cc["NOCOLOR"]} {e}')
+      else:
+        print (f'{cc["RED"]}No voice for: {language}{cc["NOCOLOR"]}')
+        for vo in voices:
+          print (vo)
+        frame ([message],'RED')  
 
 def msg(message,language='English'):
   print (message)
-  speak (message,language)
-  notif (message)
+  if speak:
+    speak (message,language)
+  if notif:
+    notif (message)
 
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Runners ├────────────
 
@@ -270,33 +224,131 @@ def run_function(lf, fname, params):
     print("Error:", e)
     return {"error": str(e)}
 
+#─────────────────────────────────────────────────────────────────────────────────────────┤ Net ├────────────
 
-def msg_abut(*args):
-  abut_id = args[0] if len(args) > 0 else None
-  call_name = args[1] if len(args) > 1 else None
-  call_args = args[2:] if len(args) > 2 else []
-  json_in = {"call": call_name, "args": call_args}
-  print (json_in)
-  global node
-  abut_info=node.identity.get('abut_nodes',{}).get(abut_id,{})
-  abut_ip=abut_info.get('ip','')
-  abut_port=abut_info.get('port','')
 
-  if abut_info and abut_ip and abut_port:
-    abut_url=f'http://{abut_ip}:{abut_port}/'
-    print(abut_url)
-    headers = {"Content-Type": "application/json"}
-    abut_response=None
+if comm_enable and scan_enable:
+  def msg_abut(*args):
+    abut_id = args[0] if len(args) > 0 else None
+    call_name = args[1] if len(args) > 1 else None
+    call_args = args[2:] if len(args) > 2 else []
+    json_in = {"call": call_name, "args": call_args}
+    print (json_in)
+    global node
+    abut_info=node.identity.get('abut_nodes',{}).get(abut_id,{})
+    abut_ip=abut_info.get('ip','')
+    abut_port=abut_info.get('port','')
+
+    if abut_info and abut_ip and abut_port:
+      abut_url=f'http://{abut_ip}:{abut_port}/'
+      print(abut_url)
+      headers = {"Content-Type": "application/json"}
+      abut_response=None
+      try:
+        response = requests.post(abut_url, json=json_in, headers=headers)
+        response.raise_for_status()
+        response_json = response.json()
+        abut_response = response_json.get('result',None)
+      except requests.exceptions.RequestException as e:
+        print("Error:", e)
+        return {"error": str(e)}
+      return {abut_id:abut_response}
+
+
+if comm_enable and scan_enable:
+  def test_portopen(host='127.0.0.1', port=8635, timeout=0.5):
     try:
-      response = requests.post(abut_url, json=json_in, headers=headers)
-      response.raise_for_status()
-      response_json = response.json()
-      abut_response = response_json.get('result',None)
-    except requests.exceptions.RequestException as e:
-      print("Error:", e)
-      return {"error": str(e)}
-    return {abut_id:abut_response}
+      sock = socket.create_connection((host, port))
+      sock.settimeout(timeout)
+      sock.close()
+      return True
+    except Exception as e:
+      print(f"{host} Error: {e}")
+      return False
 
+if comm_enable and scan_enable:
+  def get_node_status(url, max_attempts = 10, timeout=2):
+    node_id = ""
+    for attempt in range(1, max_attempts + 1):
+      try:
+  #      print(url)
+        response = requests.get(url+'/status/', timeout=timeout)
+        response.raise_for_status()
+        response_json = response.json()
+        node_id = response_json.get('id', '')
+
+      except Exception as e:
+        print(f'Url request error: {e}')
+        response_json = {}
+      if node_id:
+        return response_json
+    return {}
+
+if comm_enable and scan_enable:
+  def scan_lan(port=default_port, timeout=0.002):
+    hosts_set = set()
+    hosts_open = []
+    interfaces = netifaces.interfaces()
+    for interface in interfaces:
+      addresses = netifaces.ifaddresses(interface).get(netifaces.AF_INET)
+      if addresses:
+        for address in addresses:
+          ip_address = address['addr']
+          if ipaddress.ip_address(ip_address).is_private and ip_address != '127.0.0.1':
+            network_mask = address['netmask']
+            network = ipaddress.IPv4Network(f"{ip_address}/{network_mask}", strict=False)
+            lan_ips = set([str(host) for host in network.hosts()])
+            hosts_set.update(lan_ips)
+    for hostip in list(hosts_set):
+      try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+          s.settimeout(timeout)
+          s.connect((hostip, port))
+          hosts_open.append(hostip)
+      except:
+        pass
+    return hosts_open
+
+if comm_enable and scan_enable:
+  def check_health(url=f'http://localhost:{default_port}',max_attempts = 10, timeout=2):
+    for attempt in range(1, max_attempts + 1):
+      try:
+        response = requests.get(url+'/status/', timeout=timeout)
+        response.raise_for_status()
+        response_json = response.json()
+      except requests.exceptions.RequestException as e:
+        print(f'Url request error: {e}')
+        response_json = {}
+      
+      if response_json and 'healthy' in response_json and 'busy' in response_json:
+        if response_json['healthy'] and not response_json['busy']:
+          return True
+      time.sleep(1)
+    else:
+      print(f'Connection failed with {url}')
+      return False
+
+if comm_enable and scan_enable:
+  def find_net_nodes(port=default_port):
+      nodes = {}
+      nodes_ip_candidate = scan_lan()
+      if test_portopen('127.0.0.1', port):
+          nodes_ip_candidate.insert(0, '127.0.0.1')
+      for node_ip in nodes_ip_candidate:
+          node_status = get_node_status(f'http://{node_ip}:{port}')
+          node_id = node_status.get('id', '')
+          if node_id:
+            node_status['ip'] = node_ip
+            node_status['port'] = port
+            if "id" in node_status:
+              del node_status["id"]
+            if "abut_nodes" in node_status:
+              del node_status["abut_nodes"]
+            nodes.setdefault(node_id, node_status)
+      #frame(["Found nodes: "] + list(nodes.keys()),'YELLOW')
+      return nodes
+
+#───────────────────────────────────────────────────────────────────────────────────┤ Call functions ├────────────
 
 def autocall(tid, fcall, args):
   args = [str(args)] if not isinstance(args, list) else args
@@ -304,7 +356,7 @@ def autocall(tid, fcall, args):
   global caller_locals
   global node
 
-  print (fcall)
+  #print (fcall)
   if fcall in node.identity.get('capabilities',[]):
     if tid == node.id and fcall:
       if caller_functions and fcall in caller_functions:
@@ -326,96 +378,6 @@ def autocall(tid, fcall, args):
       return result
   else:
     pass
-
-#─────────────────────────────────────────────────────────────────────────────────────────┤ Net ├────────────
-
-def test_portopen(host='127.0.0.1', port=8635, timeout=0.5):
-  try:
-    sock = socket.create_connection((host, port))
-    sock.settimeout(timeout)
-    sock.close()
-    return True
-  except Exception as e:
-    print(f"{host} Error: {e}")
-    return False
-
-def get_node_status(url, max_attempts = 10, timeout=2):
-  node_id = ""
-  for attempt in range(1, max_attempts + 1):
-    try:
-#      print(url)
-      response = requests.get(url+'/status/', timeout=timeout)
-      response.raise_for_status()
-      response_json = response.json()
-      node_id = response_json.get('id', '')
-
-    except Exception as e:
-      print(f'Url request error: {e}')
-      response_json = {}
-    if node_id:
-      return response_json
-  return {}
-
-def scan_lan(port=default_port, timeout=0.002):
-  hosts_set = set()
-  hosts_open = []
-  interfaces = netifaces.interfaces()
-  for interface in interfaces:
-    addresses = netifaces.ifaddresses(interface).get(netifaces.AF_INET)
-    if addresses:
-      for address in addresses:
-        ip_address = address['addr']
-        if ipaddress.ip_address(ip_address).is_private and ip_address != '127.0.0.1':
-          network_mask = address['netmask']
-          network = ipaddress.IPv4Network(f"{ip_address}/{network_mask}", strict=False)
-          lan_ips = set([str(host) for host in network.hosts()])
-          hosts_set.update(lan_ips)
-  for hostip in list(hosts_set):
-    try:
-      with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.settimeout(timeout)
-        s.connect((hostip, port))
-        hosts_open.append(hostip)
-    except:
-      pass
-  return hosts_open
-
-def check_health(url=f'http://localhost:{default_port}',max_attempts = 10, timeout=2):
-  for attempt in range(1, max_attempts + 1):
-    try:
-      response = requests.get(url+'/status/', timeout=timeout)
-      response.raise_for_status()
-      response_json = response.json()
-    except requests.exceptions.RequestException as e:
-      print(f'Url request error: {e}')
-      response_json = {}
-    
-    if response_json and 'healthy' in response_json and 'busy' in response_json:
-      if response_json['healthy'] and not response_json['busy']:
-        return True
-    time.sleep(1)
-  else:
-    print(f'Connection failed with {url}')
-    return False
-
-def find_net_nodes(port=default_port):
-    nodes = {}
-    nodes_ip_candidate = scan_lan()
-    if test_portopen('127.0.0.1', port):
-        nodes_ip_candidate.insert(0, '127.0.0.1')
-    for node_ip in nodes_ip_candidate:
-        node_status = get_node_status(f'http://{node_ip}:{port}')
-        node_id = node_status.get('id', '')
-        if node_id:
-          node_status['ip'] = node_ip
-          node_status['port'] = port
-          if "id" in node_status:
-            del node_status["id"]
-          if "abut_nodes" in node_status:
-            del node_status["abut_nodes"]
-          nodes.setdefault(node_id, node_status)
-    #frame(["Found nodes: "] + list(nodes.keys()),'YELLOW')
-    return nodes
 
 #───────────────────────────────────────────────────────────────────────────────────┤ List local functions ├────────────
 local_variables = locals()
@@ -500,8 +462,9 @@ class Node:
     if self._initialized:
       return
     self._initialized = True
-    self.thread = threading.Thread(target=self.process, daemon=True)
-    self.thread.start()
+    if comm_enable and scan_enable:
+      self.thread = threading.Thread(target=self.process, daemon=True)
+      self.thread.start()
 
     self.id =str(uuid.uuid4())
     self.healthy=True
@@ -510,10 +473,9 @@ class Node:
     self.nodes={}
     self.proxies=None 
     self.identity={}
-    self.my_type='complex'
+    self.my_type='complex' if comm_enable and scan_enable else 'simple'
     #master_id = None
     #token = False
-
 
     self.identity.update({'id':str(self.id)})
     self.identity.update({'myname':__MyName__})
@@ -525,7 +487,10 @@ class Node:
     self.identity.update({'capabilities':self.capabilities})
     #self.my_type='simple'
     #self.my_type='passive'
-    frame(f"Node_Init: {self.id}",'PINK')
+    frame([f"Node_Init: {self.id}","Scanning is      : enabled" if scan_enable else "Scanning is      : disabled", "Communication is : enabled" if comm_enable else "Communication is : disabled"],'PINK')
+
+    
+
 
   def json2json(self,json_in):
     debug=True
