@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os, sys,  platform,  subprocess,  tempfile,  time,  datetime,  uuid,  json,  base64,  io,  re,  http.server,  urllib.parse, ipaddress, threading, random, math, socket, signal, xml.etree.ElementTree as ET
+import os, sys,  platform,  subprocess, inspect, tempfile,  time,  datetime,  uuid,  json,  base64,  io,  re,  http.server,  urllib.parse, ipaddress, threading, random, math, socket, signal, xml.etree.ElementTree as ET
 scan_enable=True
 comm_enable=True
 try:
@@ -207,10 +207,10 @@ def msg(message,language='English'):
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Runners ├────────────
 
 def getfunctions(vlocals):
-  global caller_locals
-  caller_locals = vlocals
-  caller_functions = [name for name, value in caller_locals.items() if callable(value)]
-  return caller_functions
+    global caller_locals
+    caller_locals = vlocals
+    caller_functions = [name for name, value in caller_locals.items() if inspect.isfunction(value)]
+    return caller_functions
 
 def run_function(lf, fname, params):
   params = [str(params)] if not isinstance(params, list) else params
