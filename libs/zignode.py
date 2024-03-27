@@ -315,6 +315,7 @@ if comm_enable and scan_enable:
         pass
     return hosts_open
 
+
 if comm_enable and scan_enable:
   def check_health(url=f'http://localhost:{default_port}',max_attempts = 10, timeout=2):
     for attempt in range(1, max_attempts + 1):
@@ -323,7 +324,7 @@ if comm_enable and scan_enable:
         response.raise_for_status()
         response_json = response.json()
       except requests.exceptions.RequestException as e:
-        print(f'Url request error: {e}')
+        #print(f'Url request error: {e}')
         response_json = {}
       
       if response_json and 'healthy' in response_json and 'busy' in response_json:
@@ -331,7 +332,7 @@ if comm_enable and scan_enable:
           return True
       time.sleep(1)
     else:
-      print(f'Connection failed with {url}')
+      #print(f'Connection failed with {url}')
       return False
 
 if comm_enable and scan_enable:
@@ -495,9 +496,6 @@ class Node:
     #self.my_type='passive'
     frame([f"Node_Init: {self.id}","Scanning is      : enabled" if scan_enable else "Scanning is      : disabled", "Communication is : enabled" if comm_enable else "Communication is : disabled"],'PINK')
 
-    
-
-
   def json2json(self,json_in):
     debug=True
     self.json_out={}
@@ -597,16 +595,17 @@ def init(caller_locals=None):
     caller_functions=getfunctions(caller_locals)
     node.capabilities.extend(caller_functions)
 
-
 def listen(ip=default_ip, port=default_port, ):
   global node
   server = http.server.HTTPServer((ip, port), lambda *args, **kwargs: NodeHttp(node=node, *args, **kwargs))
   frame(f"Listening on: http://{ip}:{port}", 'GREEN')
   server.serve_forever()
 
+def auto(caller_locals=None):
+  start()
+  init(locals())
+  listen()
+  finish()
 
 if __name__ == '__main__':
-  start()
-  init()
-  listen()
-  finish ()
+  auto()

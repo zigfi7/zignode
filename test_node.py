@@ -12,9 +12,6 @@ def test_function_01(arg):
 
 #─────────────────────────────────────────────────────────────────────────────────────────┤ Functions Specific ├────────────
 if __name__ == '__main__':
-  zignode.start()
-  zignode.init(locals())
-  zignode.listen()
-  zignode.finish()
+  zignode.auto(locals())
 
 
