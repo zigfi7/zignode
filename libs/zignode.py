@@ -120,8 +120,6 @@ def get_computer_name():
 try:
   if platform.system() == "Windows":
     import plyer
-    import win32com.client
-    
     def notif(message):
       plyer.notification.notify(
       title=__MyName__,
@@ -130,21 +128,59 @@ try:
       timeout=15,
     )
       return True
-  elif platform.system() == "Linux":
+except Exception as e:
+  pass
+
+try:
+  if platform.system() == "Linux":
     import notify2
     def notif(message):
       notify2.init("")
       notification = notify2.Notification(__MyName__, message)
       notification.show()
       return True
-  else:
-    def notif(message):
-      frame ([message],'RED')
-      return "On screen notification disabled"
 except Exception as e:
   pass
 
+# if not notif:
+#   def notif(message):
+#     frame ([message],'RED')
+
 #────────────┤ Speak ├────────────
+
+try:
+  if platform.system() == "Windows":
+    import win32com.client
+    def speak(message,language='English',rate=2.5,volume=80):
+      voice=None
+      voices = [v.GetDescription() for v in win32com.client.Dispatch("SAPI.SpVoice").GetVoices()]
+      print (voices)
+      for vo in voices:
+        if 'Eng' in vo and 'Aria' in vo:
+          voice=vo
+        elif language in vo:
+          voice=vo 
+      for vo in voices:
+        if language in vo:
+          voice=vo 
+      print (f'Selected: {cc["GREEN"]} {voice}{cc["NOCOLOR"]}')
+      if voice:
+        speaker = win32com.client.Dispatch("SAPI.SpVoice")
+        speaker.Voice = next(vo for vo in speaker.GetVoices() if vo.GetDescription() == voice)
+        speaker.Rate = rate
+        speaker.Volume = volume
+        try:
+          speaker.Speak(message)
+        except Exception as e:
+          print(f'{cc["RED"]}Error:{cc["NOCOLOR"]} {e}')
+      else:
+        print (f'{cc["RED"]}No voice for: {language}{cc["NOCOLOR"]}')
+        for vo in voices:
+          print (vo)
+        frame ([message],'RED')  
+except Exception as e:
+  pass
+
 if platform.system() == "Linux":
   #In linux we will use rhvoice
   try:
@@ -166,36 +202,6 @@ if platform.system() == "Linux":
   except subprocess.CalledProcessError:
     pass
   
-if platform.system() == "Windows":
-  if win32com.client:
-    def speak(message,language='English',rate=2.5,volume=80):
-      voice=None
-      voices = [v.GetDescription() for v in win32com.client.Dispatch("SAPI.SpVoice").GetVoices()]
-      print (voices)
-      for vo in voices:
-        if 'Eng' in vo and 'Aria' in vo:
-          voice=vo
-        elif language in vo:
-          voice=vo 
-      
-      for vo in voices:
-        if language in vo:
-          voice=vo 
-      print (f'Selected: {cc["GREEN"]} {voice}{cc["NOCOLOR"]}')
-      if voice:
-        speaker = win32com.client.Dispatch("SAPI.SpVoice")
-        speaker.Voice = next(vo for vo in speaker.GetVoices() if vo.GetDescription() == voice)
-        speaker.Rate = rate
-        speaker.Volume = volume
-        try:
-          speaker.Speak(message)
-        except Exception as e:
-          print(f'{cc["RED"]}Error:{cc["NOCOLOR"]} {e}')
-      else:
-        print (f'{cc["RED"]}No voice for: {language}{cc["NOCOLOR"]}')
-        for vo in voices:
-          print (vo)
-        frame ([message],'RED')  
 
 def msg(message,language='English'):
   print (message)
