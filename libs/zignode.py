@@ -239,7 +239,7 @@ if comm_enable and scan_enable:
     call_name = args[1] if len(args) > 1 else None
     call_args = args[2:] if len(args) > 2 else []
     json_in = {"call": call_name, "args": call_args}
-    print (json_in)
+    #print (json_in)
     global node
     abut_info=node.identity.get('abut_nodes',{}).get(abut_id,{})
     abut_ip=abut_info.get('ip','')
@@ -247,7 +247,7 @@ if comm_enable and scan_enable:
 
     if abut_info and abut_ip and abut_port:
       abut_url=f'http://{abut_ip}:{abut_port}/'
-      print(abut_url)
+      #print(abut_url)
       headers = {"Content-Type": "application/json"}
       abut_response=None
       try:
@@ -256,7 +256,7 @@ if comm_enable and scan_enable:
         response_json = response.json()
         abut_response = response_json.get('result',None)
       except requests.exceptions.RequestException as e:
-        print("Error:", e)
+        #print("Error:", e)
         return {"error": str(e)}
       return {abut_id:abut_response}
 
@@ -284,7 +284,7 @@ if comm_enable and scan_enable:
         node_id = response_json.get('id', '')
 
       except Exception as e:
-        print(f'Url request error: {e}')
+        #print(f'Url request error: {e}')
         response_json = {}
       if node_id:
         return response_json
@@ -603,7 +603,7 @@ def listen(ip=default_ip, port=default_port, ):
 
 def auto(caller_locals=None):
   start()
-  init(locals())
+  init(caller_locals)
   listen()
   finish()
 
