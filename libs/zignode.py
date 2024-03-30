@@ -547,26 +547,29 @@ class NodeHttp(http.server.BaseHTTPRequestHandler):
     pass
 
   def do_GET(self):
-    if self.path in ('/', '/index.html', '/index.htm'):
-      self.send_response(200)
-      self.send_header('Content-Type', 'text/html')
-      self.end_headers()
-      self.wfile.write(mkhtml(self.node).encode('utf-8'))
+    try:
+      if self.path in ('/', '/index.html', '/index.htm'):
+        self.send_response(200)
+        self.send_header('Content-Type', 'text/html')
+        self.end_headers()
+        self.wfile.write(mkhtml(self.node).encode('utf-8'))
 
-    elif self.path in ('/status/, /status'):
-      response_data = self.node.json2json({})
-      self.send_response(200)
-      self.send_header('Content-Type', 'application/json')
-      self.end_headers()
-      self.wfile.write(json.dumps(response_data).encode('utf-8'))
+      elif self.path in ('/status/, /status'):
+        response_data = self.node.json2json({})
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json.dumps(response_data).encode('utf-8'))
 
-    elif self.path == '/favicon.ico':
-      self.send_response(200)
-      self.send_header('Content-Type', 'image/x-icon')
-      self.end_headers()
-      self.wfile.write(base64.b64decode(favicon_data))
-    else:
-      self.send_error(404, 'Not Found')
+      elif self.path == '/favicon.ico':
+        self.send_response(200)
+        self.send_header('Content-Type', 'image/x-icon')
+        self.end_headers()
+        self.wfile.write(base64.b64decode(favicon_data))
+      else:
+        self.send_error(404, 'Not Found')
+    except ConnectionResetError:
+      pass
 
   def do_POST(self):
     content_length = int(self.headers['Content-Length'])
