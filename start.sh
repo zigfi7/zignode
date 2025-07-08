@@ -7,6 +7,7 @@ pip install --upgrade requests
 pip install --upgrade PySocks
 pip install --upgrade netifaces
 pip install --upgrade notify2 dbus-python
+pip install --upgrade aiohttp
 
 python test_node.py
 

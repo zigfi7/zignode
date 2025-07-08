@@ -1,0 +1,474 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZigNode Map</title>
+    <style>
+        html, body {
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-bar {
+            background: #2d2d2d;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+            border-bottom: 1px solid #444;
+            z-index: 2000;
+        }
+
+        .top-bar h1 {
+            font-size: 1.2em;
+            margin: 0;
+            color: #e0e0e0;
+        }
+
+        .connection-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .top-bar input {
+            background: #3d3d3d;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            width: 120px;
+        }
+
+        .top-bar button {
+            background: #6a4c93;
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .top-bar button:hover {
+            background: #5a3c83;
+        }
+
+        .status {
+            padding: 6px 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin-left: auto;
+            font-size: 14px;
+        }
+
+        .status.connected { background: #2d5a2d; color: #90ee90; }
+        .status.error { background: #5a2d2d; color: #ff9090; }
+        
+        .network-container {
+            background: #1f1f1f;
+            position: relative;
+            overflow: auto;
+            flex-grow: 1;
+        }
+
+        .node {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            user-select: none;
+            display: flex;
+            justify-content: center;
+        }
+
+        .node:hover {
+            transform: scale(1.1);
+            z-index: 100;
+        }
+
+        .node-svg {
+            filter: drop-shadow(0 0 5px rgba(106, 76, 147, 0.5));
+            width: 80px;
+            height: 80px;
+        }
+        
+        .node-label {
+            position: absolute;
+            top: 85px;
+            background: rgba(45, 45, 45, 0.9);
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 10px;
+            border: 1px solid #555;
+            font-family: monospace;
+            white-space: nowrap;
+        }
+        
+        .node-details {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(45, 45, 45, 0.9); 
+            backdrop-filter: blur(8px);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            max-width: 320px;
+            min-width: 280px;
+            z-index: 10000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            display: none; 
+            pointer-events: none;
+        }
+        
+        .node-details.visible {
+            display: block;
+        }
+
+        .node-details.pos-down {
+            top: 105px;
+        }
+        
+        .node-details.pos-up {
+            bottom: 90px;
+        }
+        
+        .node-details .node-id {
+            font-family: monospace;
+            font-weight: bold;
+            color: #8a6db3;
+            margin-bottom: 8px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+
+        .node-details .detail-row {
+            margin-bottom: 4px;
+            display: flex;
+            align-items: flex-start;
+            font-size: 11px;
+        }
+
+        .node-details .detail-label {
+            font-weight: bold;
+            min-width: 80px;
+            color: #ccc;
+        }
+
+        .node-details .detail-value {
+            color: #e0e0e0;
+            word-break: break-word;
+        }
+        /* Style for 'Active' status in tooltip */
+        .status-active { color: #50e3c2; }
+        .status-inactive { color: #e35064; }
+
+        .connection-line {
+            position: absolute;
+            background: #6a4c93;
+            height: 2px;
+            transform-origin: left center;
+            z-index: 1;
+            opacity: 0.7;
+        }
+        .connection-line.inactive {
+            background: #555;
+            opacity: 0.4;
+        }
+
+        .legend {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(45, 45, 45, 0.9);
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            border: 1px solid #555;
+            z-index: 1001;
+        }
+
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 10px; }
+        .legend-color { width: 20px; height: 20px; border-radius: 3px; }
+        .main-node { background: #6a4c93; }
+        .direct-node { background: #4a6c93; }
+        .nested-node { background: #934a6c; }
+    </style>
+</head>
+<body>
+    
+    <div class="top-bar">
+        <h1>ZigNode Map</h1>
+        <div class="connection-controls">
+            <label for="host">Host:</label> <input type="text" id="host" value="127.0.0.1">
+            <label for="port">Port:</label> <input type="text" id="port" value="8635">
+            <button onclick="toggleConnection()">Connect</button>
+            <button onclick="refreshData()">Refresh</button>
+            <label><input type="checkbox" id="autoRefresh" checked> Auto</label>
+        </div>
+        <div id="status" class="status">Disconnected</div>
+    </div>
+
+    <div class="network-container" id="networkContainer">
+        <div class="legend">
+              <div class="legend-item"><div class="legend-color main-node"></div><span>Main Node</span></div>
+              <div class="legend-item"><div class="legend-color direct-node"></div><span>Direct Abut</span></div>
+              <div class="legend-item"><div class="legend-color nested-node"></div><span>Nested Abut</span></div>
+        </div>
+    </div>
+
+    <script>
+        let isConnected = false;
+        let refreshInterval = null;
+
+        function toggleConnection() { if (isConnected) disconnect(); else connect(); }
+        
+        function connect() {
+            const host = document.getElementById('host').value, port = document.getElementById('port').value;
+            if (!host || !port) { updateStatus('Host and Port required', 'error'); return; }
+            isConnected = true;
+            document.querySelector('.connection-controls button').textContent = 'Disconnect';
+            refreshData();
+            if (document.getElementById('autoRefresh').checked) {
+                refreshInterval = setInterval(refreshData, 5000);
+            }
+        }
+        
+        function disconnect() {
+            if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+            isConnected = false;
+            document.querySelector('.connection-controls button').textContent = 'Connect';
+            updateStatus('Disconnected', 'error');
+            clearNetwork();
+        }
+        
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+        
+        async function refreshData() {
+            if (!isConnected) return;
+            const host = document.getElementById('host').value, port = document.getElementById('port').value;
+            const url = `http://${host}:${port}/status`;
+            try {
+                const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, mode: 'cors', cache: 'no-cache' });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                if (!data.id) throw new Error('Invalid data format');
+                updateStatus(`Updated: ${new Date().toLocaleTimeString()}`, 'connected');
+                renderNetwork(data);
+            } catch (error) {
+                console.error('Refresh Error:', error);
+                updateStatus(`Error: ${error.message}`, 'error');
+                disconnect();
+            }
+        }
+        
+        function clearNetwork() {
+            const container = document.getElementById('networkContainer');
+            Array.from(container.children).forEach(child => {
+                if (!child.classList.contains('legend')) child.remove();
+            });
+        }
+        
+        function renderNetwork(data) {
+            clearNetwork();
+            const container = document.getElementById('networkContainer');
+            const containerRect = container.getBoundingClientRect();
+            const centerX = containerRect.width / 2, centerY = containerRect.height / 2;
+            const nodePositions = new Map();
+            
+            nodePositions.set(data.id, { x: centerX, y: centerY, type: 'main' });
+            
+            const directAbuts = Object.values(data.abut_nodes || {});
+            const directRadius = Math.min(containerRect.width, containerRect.height) / 4;
+            
+            directAbuts.forEach((node, index) => {
+                const angle = (index * 2 * Math.PI) / directAbuts.length;
+                nodePositions.set(node.id, { x: centerX + Math.cos(angle) * directRadius, y: centerY + Math.sin(angle) * directRadius, type: 'direct' });
+            });
+            
+            const nestedRadius = Math.min(containerRect.width, containerRect.height) / 2.5;
+            directAbuts.forEach((parent, parentIndex) => {
+                if (parent && parent.abut_nodes) {
+                    const nestedAbuts = Object.values(parent.abut_nodes);
+                    nestedAbuts.forEach((node, index) => {
+                        if (!nodePositions.has(node.id)) {
+                            const parentAngle = (parentIndex * 2 * Math.PI) / directAbuts.length;
+                            const nestedAngle = parentAngle + (index - nestedAbuts.length / 2 + 0.5) * 0.3;
+                            nodePositions.set(node.id, { x: centerX + Math.cos(nestedAngle) * nestedRadius, y: centerY + Math.sin(nestedAngle) * nestedRadius, type: 'nested' });
+                        }
+                    });
+                }
+            });
+
+            drawConnections(data, nodePositions);
+            
+            nodePositions.forEach((pos, id) => {
+                let nodeData = {};
+                if (id === data.id) {
+                    nodeData = data;
+                } else if (data.abut_nodes[id]) {
+                    nodeData = data.abut_nodes[id];
+                } else {
+                    for (const parent of directAbuts) {
+                        if (parent?.abut_nodes?.[id]) {
+                            nodeData = parent.abut_nodes[id];
+                            break;
+                        }
+                    }
+                }
+                drawNode(id, nodeData, pos);
+            });
+        }
+        
+        function drawConnections(data, nodePositions) {
+            const container = document.getElementById('networkContainer');
+            const mainPos = nodePositions.get(data.id);
+            
+            Object.values(data.abut_nodes || {}).forEach(node => {
+                const nodePos = nodePositions.get(node.id);
+                if (nodePos) createConnectionLine(mainPos, nodePos, container, node.active);
+                
+                if (node.abut_nodes) {
+                    Object.values(node.abut_nodes).forEach(nestedNode => {
+                        const nestedPos = nodePositions.get(nestedNode.id);
+                        if(nestedPos) createConnectionLine(nodePos, nestedPos, container, nestedNode.active);
+                    });
+                }
+            });
+        }
+        
+        function createConnectionLine(pos1, pos2, container, isActive = true) {
+            const line = document.createElement('div');
+            line.className = 'connection-line' + (isActive ? '' : ' inactive');
+            const dx = pos2.x - pos1.x, dy = pos2.y - pos1.y;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            line.style.width = `${length}px`;
+            line.style.left = `${pos1.x}px`;
+            line.style.top = `${pos1.y}px`;
+            line.style.transform = `rotate(${angle}rad)`;
+            container.appendChild(line);
+        }
+
+        // --- UPDATED NODE DRAWING FUNCTION ---
+        function drawNode(nodeId, nodeData, position) {
+            const container = document.getElementById('networkContainer');
+            const node = document.createElement('div');
+            node.className = 'node';
+            node.style.left = (position.x - 40) + 'px';
+            node.style.top = (position.y - 40) + 'px';
+            
+            const nodeColor = position.type === 'main' ? '#6a4c93' : 
+                              position.type === 'direct' ? '#4a6c93' : '#934a6c';
+
+            // Helper to format the address
+            const formatAddress = (data) => {
+                if (data.addresses && data.addresses.length > 0) {
+                    return data.addresses[0].join(':'); // e.g., "192.168.1.10:8635"
+                }
+                if (data.ip) {
+                    return data.ip; // For simple nodes like Wemos
+                }
+                return 'N/A';
+            };
+
+            // Helper to format last seen time
+            const formatLastSeen = (timestamp) => {
+                if (!timestamp) return 'N/A';
+                const now = Date.now() / 1000;
+                const secondsAgo = Math.round(now - timestamp);
+                if (secondsAgo < 60) return `${secondsAgo} seconds ago`;
+                if (secondsAgo < 3600) return `${Math.round(secondsAgo / 60)} minutes ago`;
+                return new Date(timestamp * 1000).toLocaleString();
+            };
+            
+            const isActive = nodeData.active === undefined ? true : nodeData.active;
+            const activeClass = isActive ? 'status-active' : 'status-inactive';
+            const activeText = isActive ? 'Active' : 'Inactive';
+            
+            node.innerHTML = `
+                <svg class="node-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="${nodeColor}" stroke="#000" stroke-width="1.5" d="M4.75 8L12 4l7.25 4v8L12 20l-7.25-4V8Z"/>
+                </svg>
+                <div class="node-label">${nodeId.substring(0,8)}...</div>
+                <div class="node-details">
+                    <div class="node-id">${nodeId}</div>
+                    <div class="detail-row"><span class="detail-label">Name:</span><span class="detail-value">${nodeData.myname || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Hostname:</span><span class="detail-value">${nodeData.hostname || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Address:</span><span class="detail-value">${formatAddress(nodeData)}</span></div>
+                    <div class="detail-row"><span class="detail-label">Version:</span><span class="detail-value">${nodeData.version || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Platform:</span><span class="detail-value">${nodeData.platform || 'N/A'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Status:</span><span class="detail-value ${activeClass}">${activeText}</span></div>
+                    <div class="detail-row"><span class="detail-label">Last Seen:</span><span class="detail-value">${formatLastSeen(nodeData.last_seen)}</span></div>
+                    <div class="detail-row"><span class="detail-label">Capabilities:</span><span class="detail-value">${nodeData.capabilities ? nodeData.capabilities.join(', ') : 'N/A'}</span></div>
+                </div>
+            `;
+            container.appendChild(node);
+            
+            const tooltip = node.querySelector('.node-details');
+            node.addEventListener('mouseenter', (e) => {
+                positionTooltip(e.currentTarget, tooltip);
+            });
+            node.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('visible', 'pos-up', 'pos-down');
+            });
+        }
+        
+        function positionTooltip(nodeElement, tooltipElement) {
+            const nodeRect = nodeElement.getBoundingClientRect();
+            const containerRect = document.getElementById('networkContainer').getBoundingClientRect();
+            
+            tooltipElement.style.visibility = 'hidden';
+            tooltipElement.classList.add('visible');
+            const tooltipHeight = tooltipElement.offsetHeight;
+            tooltipElement.classList.remove('visible');
+            tooltipElement.style.visibility = '';
+
+            const spaceBelow = containerRect.bottom - nodeRect.bottom;
+
+            if (spaceBelow < tooltipHeight + 20) {
+                tooltipElement.classList.add('pos-up');
+            } else {
+                tooltipElement.classList.add('pos-down');
+            }
+            
+            tooltipElement.classList.add('visible');
+        }
+
+        document.getElementById('autoRefresh').addEventListener('change', () => {
+            if (isConnected) {
+                if (document.getElementById('autoRefresh').checked) {
+                    if(!refreshInterval) refreshInterval = setInterval(refreshData, 5000);
+                } else if(refreshInterval) {
+                    clearInterval(refreshInterval); refreshInterval = null;
+                }
+            }
+        });
+
+        document.querySelectorAll('.connection-controls input').forEach(input => {
+            input.addEventListener('keypress', e => { if (e.key === 'Enter') toggleConnection(); });
+        });
+    </script>
+</body>
+</html>
