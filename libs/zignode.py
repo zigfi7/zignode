@@ -430,35 +430,132 @@ def add_cors_headers(response):
 async def handle_get_root(request):
     node = request.app['node']
     html = f"""
-    <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Node: {node.id[:8]}</title>
-    <style>
-        body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: 
-        h2, h3 {{ color: 
-        table {{ width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-        th, td {{ border: 1px solid 
-        th {{ background-color: 
-        td {{ background-color: 
-        tr:nth-child(even) td {{ background-color: 
-        b {{ color: 
-        code {{ background-color: 
-        .container {{ display: flex; align-items: center; gap: 20px; margin-bottom: 20px;}}
-        .status-active {{ color: 
-        .status-inactive {{ color: 
-    </style></head><body>
-    <div class="container">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="80" height="80"><path fill="darkviolet" stroke="
-        <div><h2>Node ID: <b>{node.id}</b></h2><p><b>{node.hostname}</b> running <b>{node.script_name}</b></p></div>
-    </div>
-    <h3>API</h3><p>Send a <code>POST</code> request to <code>/</code> with a JSON body. Can be a single call object or a list of calls.</p>
-    <p><code>{{"call": "function_name", "args": ["param1"], "id": "node_id_or_auto"}}</code></p>
-    <h3>Local Capabilities ({len(node.identity['capabilities'])})</h3>
-    <table><tr><th>Function Name</th></tr>
-    {"".join(f"<tr><td>{cap}</td></tr>" for cap in node.identity['capabilities'])}
-    </table>
-    <h3>Abuts ({len(node.abuts)})</h3>
-    <table><tr><th>ID</th><th>Status</th><th>Addresses (My PoV)</th><th>Hostname</th><th>Version</th></tr>
-    {"".join(f"<tr><td>{nid}</td><td><span class='status-{'active' if nd.get('active') else 'inactive'}'>{'Active' if nd.get('active') else 'Inactive'}</span></td><td>{nd.get('addresses')}</td><td>{nd.get('hostname','N/A')}</td><td>{nd.get('version','N/A')}</td></tr>" for nid,nd in sorted(node.abuts.items()))}
-    </table></body></html>"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Node: {node.id[:8]}</title>
+        <style>
+            :root {{
+                --background-color: 
+                --text-color: 
+                --primary-color: 
+                --secondary-color: 
+                --surface-color: 
+                --border-color: 
+                --success-color: 
+                --error-color: 
+            }}
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                background-color: var(--background-color);
+                color: var(--text-color);
+                margin: 0;
+                padding: 2rem;
+            }}
+            main {{
+                max-width: 900px;
+                margin: auto;
+            }}
+            h2, h3 {{
+                color: var(--primary-color);
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 10px;
+                font-weight: 500;
+            }}
+            table {{
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 20px;
+                margin-bottom: 30px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }}
+            th, td {{
+                border: 1px solid var(--border-color);
+                padding: 12px 15px;
+                text-align: left;
+                word-break: break-all;
+            }}
+            th {{
+                background-color: var(--secondary-color);
+                color: var(--text-color);
+                font-weight: 600;
+            }}
+            td {{
+                background-color: var(--surface-color);
+            }}
+            b {{
+                color: var(--text-color);
+                font-weight: 600;
+            }}
+            code {{
+                background-color: var(--border-color);
+                color: var(--primary-color);
+                padding: 3px 6px;
+                border-radius: 4px;
+                font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+            }}
+            .header-container {{
+                display: flex;
+                align-items: center;
+                gap: 25px;
+                margin-bottom: 2rem;
+                flex-wrap: wrap;
+            }}
+            .header-container svg {{
+                filter: drop-shadow(0 0 8px rgba(187, 134, 252, 0.5));
+                flex-shrink: 0;
+            }}
+            .status-active {{
+                color: var(--success-color);
+                font-weight: bold;
+            }}
+            .status-inactive {{
+                color: var(--error-color);
+            }}
+            a {{
+                color: var(--primary-color);
+            }}
+        </style>
+    </head>
+    <body>
+        <main>
+            <div class="header-container">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="90" height="90">
+                    <path fill="
+                </svg>
+                <div>
+                    <h2>Node ID: <b>{node.id}</b></h2>
+                    <p><b>{node.hostname}</b> running <b>{node.script_name}</b></p>
+                </div>
+            </div>
+            <h3>API</h3>
+            <p>Send a <code>POST</code> request to <code>/</code> with a JSON body. Can be a single call object or a list of calls.</p>
+            <p>Example: <code>{{"call": "msg", "args": ["Hello"], "id": "node_id_or_auto"}}</code></p>
+            <h3>Local Capabilities ({len(node.identity['capabilities'])})</h3>
+            <table>
+                <tr><th>Function Name</th></tr>
+                {''.join(f"<tr><td>{cap}</td></tr>" for cap in sorted(node.identity['capabilities']))}
+            </table>
+            <h3>Abuts ({len(node.abuts)})</h3>
+            <table>
+                <tr><th>ID</th><th>Status</th><th>Addresses (My PoV)</th><th>Hostname</th><th>Version</th></tr>
+                {''.join(
+                    f"<tr>"
+                    f"<td>{nid}</td>"
+                    f"<td><span class='status-{'active' if nd.get('active') else 'inactive'}'>{'Active' if nd.get('active') else 'Inactive'}</span></td>"
+                    f"<td>{nd.get('addresses')}</td>"
+                    f"<td>{nd.get('hostname','N/A')}</td>"
+                    f"<td>{nd.get('version','N/A')}</td>"
+                    f"</tr>"
+                    for nid, nd in sorted(node.abuts.items())
+                )}
+            </table>
+        </main>
+    </body>
+    </html>
+    """
     return add_cors_headers(web.Response(text=html, content_type='text/html'))
 async def handle_get_status(request):
     node = request.app['node']
@@ -508,7 +605,9 @@ async def on_cleanup(app):
         except asyncio.CancelledError: pass
     if 'client_session' in app:
         await app['client_session'].close()
-def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=MANUAL_NODE_LIST):
+def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=MANUAL_NODE_LIST, debug_mode=False):
+    global debug 
+    debug = debug_mode
     MANUAL_NODE_LIST=manual_node_list;
     if not comm_enable:
         frame("Communication disabled: 'aiohttp' library not found.", "RED")
@@ -519,7 +618,8 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
         'handle_post_rpc', 'handle_get_favicon', 'discover_and_update_nodes', 
         'discovery_loop', 'scan_port_wrapper', 'check_node_status_wrapper', 
         'run_local_function', '_send_request', '_process_single_call', '_format_response', 
-        'Node', 'add_cors_headers'
+        'Node', 'add_cors_headers',
+        'notif_win', 'notif_linux', 'speak_win', 'speak_rhvoice'
     ]
     shareable_functions = {}
     if external_locals:
@@ -529,8 +629,10 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
         }
     shareable_functions['msg'] = msg
     shareable_functions['frame'] = frame
-    if notif: shareable_functions['notif'] = notif
-    if speak: shareable_functions['speak'] = speak
+    if notif:
+        shareable_functions['notif'] = notif
+    if speak:
+        shareable_functions['speak'] = speak
     node = Node(shareable_functions)
     start_message = [
     f"       \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m Hello! My name is \033[33m{node.script_name} \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==",
@@ -551,7 +653,7 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
     app.on_cleanup.append(on_cleanup)
     frame(f"Listening on: http://{ip}:{port}", "GREEN")
     try:
-        web.run_app(app, host=ip, port=port, print=None)
+        web.run_app(app, host=ip, port=port, print=None if not debug else True, access_log=None if not debug else sys.stdout)
     except (KeyboardInterrupt, SystemExit):
         pass
     finish_time = time.time()
