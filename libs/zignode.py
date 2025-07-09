@@ -438,14 +438,14 @@ async def handle_get_root(request):
         <title>Node: {node.id[:8]}</title>
         <style>
             :root {{
-                --background-color: 
-                --text-color: 
-                --primary-color: 
-                --secondary-color: 
-                --surface-color: 
-                --border-color: 
-                --success-color: 
-                --error-color: 
+                --background-color: #1e1e1e;
+                --text-color: #e0e0e0;
+                --primary-color: #bb86fc;
+                --secondary-color: #3700b3;
+                --surface-color: #2a2a2a;
+                --border-color: #333333;
+                --success-color: #03dac6;
+                --error-color: #cf6679;
             }}
             body {{
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -455,7 +455,6 @@ async def handle_get_root(request):
                 padding: 2rem;
             }}
             main {{
-                max-width: 900px;
                 margin: auto;
             }}
             h2, h3 {{
@@ -523,21 +522,24 @@ async def handle_get_root(request):
         <main>
             <div class="header-container">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" width="90" height="90">
-                    <path fill="
+                    <path fill="#bb86fc" stroke="#1e1e1e" stroke-width="0.5" d="M4.75 8L12 4l7.25 4v8L12 20l-7.25-4V8Z"/>
                 </svg>
                 <div>
                     <h2>Node ID: <b>{node.id}</b></h2>
                     <p><b>{node.hostname}</b> running <b>{node.script_name}</b></p>
                 </div>
             </div>
+
             <h3>API</h3>
             <p>Send a <code>POST</code> request to <code>/</code> with a JSON body. Can be a single call object or a list of calls.</p>
             <p>Example: <code>{{"call": "msg", "args": ["Hello"], "id": "node_id_or_auto"}}</code></p>
+            
             <h3>Local Capabilities ({len(node.identity['capabilities'])})</h3>
             <table>
                 <tr><th>Function Name</th></tr>
                 {''.join(f"<tr><td>{cap}</td></tr>" for cap in sorted(node.identity['capabilities']))}
             </table>
+
             <h3>Abuts ({len(node.abuts)})</h3>
             <table>
                 <tr><th>ID</th><th>Status</th><th>Addresses (My PoV)</th><th>Hostname</th><th>Version</th></tr>
@@ -556,6 +558,7 @@ async def handle_get_root(request):
     </body>
     </html>
     """
+    return add_cors_headers(web.Response(text=html, content_type='text/html'))
     return add_cors_headers(web.Response(text=html, content_type='text/html'))
 async def handle_get_status(request):
     node = request.app['node']
