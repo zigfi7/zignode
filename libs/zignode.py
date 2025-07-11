@@ -9,10 +9,14 @@ try:
 except ImportError:
     comm_enable = False
 try:
-    import netifaces
+    import netifaces2 as netifaces
     scan_enable = True
 except ImportError:
-    scan_enable = False
+    try:
+        import netifaces
+        scan_enable = True
+    except ImportError:
+        scan_enable = False
 start_time = time.time()
 __MyName__ = os.path.split(sys.argv[0])[1]
 system_type = platform.system()
@@ -20,15 +24,15 @@ default_ip = "0.0.0.0"
 default_port = 8635
 MANUAL_NODE_LIST = []
 MAX_SCAN_FAILS = 16
-CALL_TIMEOUT = 15 
-INACTIVE_TIMEOUT_SECONDS = 95 
+CALL_TIMEOUT = 15
+INACTIVE_TIMEOUT_SECONDS = 95
 cc = {
     "RESET": "\033[0m", "NOCOLOR": "\033[39m", "BLACK": "\033[30m", "DRED": "\033[31m", "DGREEN": "\033[32m",
     "ORANGE": "\033[33m", "BLUE": "\033[34m", "VIOLET": "\033[35m", "CYAN": "\033[36m", "LGRAY": "\033[37m",
     "DGRAY": "\033[90m", "RED": "\033[91m", "GREEN": "\033[92m", "YELLOW": "\033[93m", "DBLUE": "\033[94m",
     "PINK": "\033[95m", "LBLUE": "\033[96m", "WHITE": "\033[97m"
 }
-favicon_data = base64.b64decode("AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQABAD0AAQA9AAEAPQABAD0AAQA9AAEAPQABAD0AAQA9AAEAPQABAD0AAQA9AAEAPQABAD0AAQAMAAAAAAAAAAIAAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgO2AAIBZAAAAAAAAAACAAIBkgACA/4AAgPqAAIDYgACA2IAAgNiAAIDYgACA2IAAgNiAAIDYgACA/AAAgP+AAICjgACABwAAAAAAAAAAAAAAAIAAgOmAAID/gACAPIAAgAJAAEACQABAAkAAQAKAAIACgACAJoAAgNCAAIDwgACATgAAAAAAAAAAAAAAAAAAAACAAIAygACA/AAAgO4AAAAAAAAAAAAAAAAAAAAAAAAAAIAAgIWAAID/gACAjgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgMeAAID/gACAawAAAAAAAAAAAAAAAIAAgEGAAIDogACA24AAgDEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAIASgACA/AAAgPuAAIAGAAAAAIAAgAOAAICYgACA/AAAgHsAAAAAAAAAAEAAQBIAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgJaAAID/gACAoQAAAACAAIBdgACA+IAAgL+AAIAYAAAAAAAAAACAAICDgACA6IAAgAwAAAAAAAAAAAAAAACAAIAEgACA+YAAgP+AAIAmgACAsoAAgPyAAIBnAAAAAAAAAACAAIA6gACA5IAAgN6AAIA0AAAAAAAAAAAAAAAAAAAAAIAAgGGAAID/gACA9IAAgP2AAICjgACABwAAAAAAAAAAgACAkoAAgP+AAIB+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACA6YAAgP+AAIDxgACAT4AAgAKAAIACgACAUYAAgPOAAIDJgACAHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgDKAAID/gACA/AAAgNmAAIDYgACA2IAAgN2AAID/gACAbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAvoAAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgAw4AAgA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAQAJAAEAPQABAD0AAQA9AAEAPQABAD0AAQA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//8AAP//AAAABwAAgAcAAJ/PAADPjwAAz58AAOc/AADjOQAA8nkAAPhzAAD48wAA/AcAAPwHAAD//wAA//8AAA==")
+favicon_data = base64.b64decode("AAABAAEAEBAAAAEAIABoBAAAFgAAACgAAAAQAAAAIAAAAAEAIAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQABAD0AAQA9AAEAPQABAD0AAQA9AAEAPQABAD0AAQA9AAEAPQABAD0AAQA9AAEAPQABAD0AAQAMAAAAAAAAAAIAAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgO2AAIBZAAAAAAAAAACAAIBkgACA/4AAgPqAAIDYgACA2IAAgNiAAIDYgACA2IAAgNiAAIDYgACA/AAAgP+AAICjgACABwAAAAAAAAAAAAAAAIAAgOmAAID/gACAPIAAgAJAAEACQABAAkAAQAKAAIACgACAJoAAgNCAAIDwgACATgAAAAAAAAAAAAAAAAAAAACAAIAygACA/AAAgO4AAAAAAAAAAAAAAAAAAAAAAAAAAIAAgIWAAID/gACAjgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgMeAAID/gACAawAAAAAAAAAAAAAAAIAAgEGAAIDogACA24AAgDEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAIASgACA/AAAgPuAAIAGAAAAAIAAgAOAAICYgACA/AAAgHsAAAAAAAAAAEAAQBIAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgJaAAID/gACAoQAAAACAAIBdgACA+IAAgL+AAIAYAAAAAAAAAACAAICDgACA6IAAgAwAAAAAAAAAAAAAAACAAIAEgACA+YAAgP+AAIAmgACAsoAAgPyAAIBnAAAAAAAAAACAAIA6gACA5IAAgN6AAIA0AAAAAAAAAAAAAAAAAAAAAIAAgGGAAID/gaca9IAAgP2AAICjgACABwAAAAAAAAAAgACAkoAAgP+AAIB+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACA6YAAgP+AAIDxgACAT4AAgAKAAIACgACAUYAAgPOAAIDJgACAHgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAgDKAAID/gACA/AAAgNmAAIDYgACA2IAAgN2AAID/gACAbwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgACAvoAAgO+AAIDvgACA74AAgO+AAIDvgACA74AAgAw4AAgA4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAQAJAAEAPQABAD0AAQA9AAEAPQABAD0AAQA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//8AAP//AAAABwAAgAcAAJ/PAADPjwAAz58AAOc/AADjOQAA8nkAAPhzAAD48wAA/AcAAPwHAAD//wAA//8AAA==")
 def split_long_string(input_string, max_length=90):
     words = []
     wordst = input_string.split()
@@ -218,8 +222,7 @@ async def _process_single_call(app, payload):
         abuts_copy = dict(node.abuts)
     direct_candidates = [
         nid for nid, ndata in abuts_copy.items()
-        if ndata.get("active") and func_name in ndata.get("capabilities", [])
-    ]
+        if ndata.get("active") and func_name in ndata.get("capabilities", [])]
     if direct_candidates:
         chosen_id = random.choice(direct_candidates)
         payload["id"] = chosen_id
@@ -231,7 +234,7 @@ async def _process_single_call(app, payload):
         if not abut_data.get("active"): continue
         for n_of_n_id, n_of_n_data in abut_data.get("abut_nodes", {}).items():
             if n_of_n_id != node.id and n_of_n_id not in abuts_copy:
-                 if func_name in n_of_n_data.get("capabilities", []):
+                if func_name in n_of_n_data.get("capabilities", []):
                     routed_candidates.append({"proxy_id": abut_id, "target_id": n_of_n_id})
     if routed_candidates:
         chosen_route = random.choice(routed_candidates)
@@ -241,7 +244,7 @@ async def _process_single_call(app, payload):
         proxy_node_data = abuts_copy[proxy_id]
         result_list = await _send_request(session, proxy_node_data, payload)
         if not result_list:
-             return _format_response(final_target_id, None, status="Failed", error="No response from proxy for routed call.")
+            return _format_response(final_target_id, None, status="Failed", error="No response from proxy for routed call.")
         final_result = result_list[0]
         final_result["routed_by"] = proxy_id
         return final_result
@@ -264,22 +267,58 @@ class Node:
             "addresses": []
         }
 def get_all_lan_ips():
-    if not scan_enable: return []
+    if not scan_enable:
+        return []
     ips = set()
+    debug_info = []
+    virtual_interface_prefixes = ('docker', 'br-', 'veth', 'virbr', 'vmnet', 'vbox', 'wsl', 'zt', 'tailscale')
     try:
-        for interface in netifaces.interfaces():
+        interfaces = netifaces.interfaces()
+        if debug:
+            debug_info.append(f"Found {len(interfaces)} interfaces: {interfaces}")
+            if not interfaces:
+                debug_info.append(f"{cc['RED']}Warning: netifaces.interfaces() returned an empty list.{cc['NOCOLOR']}")
+                debug_info.append("This might be due to permissions or environment (e.g., Docker, WSL).")
+        for interface in interfaces:
+            is_virtual = interface.startswith(virtual_interface_prefixes)
             if_addresses = netifaces.ifaddresses(interface).get(netifaces.AF_INET)
-            if if_addresses:
-                for addr_info in if_addresses:
-                    ip, netmask = addr_info.get("addr"), addr_info.get("netmask")
-                    if ip and netmask and not ip.startswith("127."):
-                        try:
-                            network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
-                            if network.prefixlen >= 19 and network.num_addresses < 8192:
-                                ips.update(str(host) for host in network.hosts())
-                        except ValueError: continue
+            if not if_addresses:
+                if debug: debug_info.append(f"- Interface '{interface}': No IPv4 address found.")
+                continue
+            for addr_info in if_addresses:
+                ip = addr_info.get("addr")
+                netmask = addr_info.get("netmask") or addr_info.get("mask")
+                if not (ip and netmask):
+                    if debug: debug_info.append(f"- Interface '{interface}': Incomplete address info {addr_info}")
+                    continue
+                if ip.startswith("127."):
+                    if debug: debug_info.append(f"- Interface '{interface}': Skipping localhost address {ip}.")
+                    continue
+                try:
+                    network = ipaddress.IPv4Network(f"{ip}/{netmask}", strict=False)
+                    if is_virtual and network.prefixlen < 23:
+                        if debug: debug_info.append(
+                            f"{cc['RED']}- Interface '{interface}': Rejected (virtual with large network).{cc['NOCOLOR']} Network {network} (prefix {network.prefixlen})."
+                        )
+                        continue
+                    if network.prefixlen >= 16 and network.num_addresses < 65536:
+                        ips.update(str(host) for host in network.hosts())
+                        if debug: debug_info.append(
+                            f"{cc['GREEN']}- Interface '{interface}': Accepted.{cc['NOCOLOR']} Network {network} ({network.num_addresses} hosts)."
+                        )
+                    else:
+                        if debug: debug_info.append(
+                            f"{cc['ORANGE']}- Interface '{interface}': Rejected.{cc['NOCOLOR']} Network {network} (prefix {network.prefixlen}) is outside the allowed size."
+                        )
+                except ValueError:
+                    if debug: debug_info.append(f"- Interface '{interface}': Could not parse network from {ip}/{netmask}.")
+                    continue
     except Exception as e:
-        frame(f"Could not scan network interfaces: {e}", "RED")
+        if debug:
+            debug_info.append(f"{cc['RED']}An unexpected error occurred during interface scan: {e}{cc['NOCOLOR']}")
+    if debug and debug_info:
+        frame(["Interface Scan Details"] + debug_info, "YELLOW")
+        frame(f"Automatically discovered {len(ips)} IP addresses from network interfaces", "CYAN")
     return list(ips)
 async def scan_port_wrapper(sem, ip, port):
     async with sem:
@@ -315,10 +354,28 @@ async def discover_and_update_nodes(app, full_scan=False):
             scan_targets_to_check.update(node.scan_targets.keys())
             if scan_enable:
                 lan_ips = await asyncio.to_thread(get_all_lan_ips)
+                if debug:
+                    frame(f"Full scan generated {len(lan_ips)} potential hosts from network interfaces.", "YELLOW")
                 for ip in lan_ips:
                     scan_targets_to_check.add((ip, default_port))
     targets_this_cycle = scan_targets_to_check.union(set(MANUAL_NODE_LIST))
+    if debug and MANUAL_NODE_LIST:
+        frame([
+            f"Starting with manual node list:",
+            f"  Manual nodes count: {len(MANUAL_NODE_LIST)}",
+            f"  Manual nodes: {MANUAL_NODE_LIST if MANUAL_NODE_LIST else 'None'}"
+            ], "VIOLET")
     targets_this_cycle.add(("127.0.0.1", default_port))
+    if debug:
+        auto_count = len(scan_targets_to_check)
+        manual_count = len(MANUAL_NODE_LIST)
+        frame([
+            f"Scan targets summary:",
+            f"  Automatic addresses: {auto_count}",
+            f"  Manual addresses: {manual_count}",
+            f"  Total targets this cycle: {len(targets_this_cycle)}"
+        ], "LBLUE")
+        frame(f"This discovery cycle will check {len(targets_this_cycle)} unique addresses.", "YELLOW")
     port_scan_tasks = [scan_port_wrapper(sem, ip, port) for ip, port in targets_this_cycle]
     open_hosts = {res for res in await asyncio.gather(*port_scan_tasks) if res}
     status_check_tasks = [check_node_status_wrapper(sem, session, ip, port) for ip, port in open_hosts]
@@ -363,22 +420,23 @@ async def discover_and_update_nodes(app, full_scan=False):
             node.abuts[nid]['active'] = True
             node.abuts[nid]['last_seen'] = time.time()
         current_ip_to_id_map = {
-            tuple(addr): nid 
-            for nid, data in node.abuts.items() 
-            if data.get('active') 
+            tuple(addr): nid
+            for nid, data in node.abuts.items()
+            if data.get('active')
             for addr in data.get('addresses', [])
         }
         for abut_id, abut_data in node.abuts.items():
             if 'abut_nodes' not in abut_data: continue
             original_n_of_n = abut_data.get('abut_nodes', {})
-            clean_n_of_n = {} 
+            clean_n_of_n = {}
             for n_of_n_id, n_of_n_data in original_n_of_n.items():
                 is_stale = False
+                if not n_of_n_data: continue
                 for addr_list in n_of_n_data.get('addresses', []):
                     addr = tuple(addr_list)
                     if addr in current_ip_to_id_map and current_ip_to_id_map[addr] != n_of_n_id:
                         is_stale = True
-                        break 
+                        break
                 if not is_stale:
                     clean_n_of_n[n_of_n_id] = n_of_n_data
             node.abuts[abut_id]['abut_nodes'] = clean_n_of_n
@@ -399,9 +457,11 @@ async def discover_and_update_nodes(app, full_scan=False):
         for addr in responsive_addresses:
             node.scan_targets[addr] = {"fails": 0}
         for abut_data in node.abuts.values():
+            if not abut_data: continue
             nodes_to_scan_for = list(abut_data.get("abut_nodes", {}).values())
             nodes_to_scan_for.append(abut_data)
             for n_data in nodes_to_scan_for:
+                if not n_data: continue
                 for addr_list in n_data.get("addresses", []):
                     addr_tuple = tuple(addr_list)
                     if all(addr_tuple) and addr_tuple not in node.scan_targets:
@@ -419,6 +479,8 @@ async def discovery_loop(app):
             await discover_and_update_nodes(app, full_scan=is_full_scan)
         except asyncio.CancelledError:
             break
+        except (AttributeError, TypeError):
+            pass
         except Exception as e:
             frame(f"Error in discovery loop: {e}", "RED")
         await asyncio.sleep(30)
@@ -529,17 +591,14 @@ async def handle_get_root(request):
                     <p><b>{node.hostname}</b> running <b>{node.script_name}</b></p>
                 </div>
             </div>
-
             <h3>API</h3>
             <p>Send a <code>POST</code> request to <code>/</code> with a JSON body. Can be a single call object or a list of calls.</p>
             <p>Example: <code>{{"call": "msg", "args": ["Hello"], "id": "node_id_or_auto"}}</code></p>
-            
             <h3>Local Capabilities ({len(node.identity['capabilities'])})</h3>
             <table>
                 <tr><th>Function Name</th></tr>
                 {''.join(f"<tr><td>{cap}</td></tr>" for cap in sorted(node.identity['capabilities']))}
             </table>
-
             <h3>Abuts ({len(node.abuts)})</h3>
             <table>
                 <tr><th>ID</th><th>Status</th><th>Addresses (My PoV)</th><th>Hostname</th><th>Version</th></tr>
@@ -609,18 +668,18 @@ async def on_cleanup(app):
     if 'client_session' in app:
         await app['client_session'].close()
 def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=MANUAL_NODE_LIST, debug_mode=False):
-    global debug 
+    global debug, MANUAL_NODE_LIST
     debug = debug_mode
-    MANUAL_NODE_LIST=manual_node_list;
+    MANUAL_NODE_LIST.extend(manual_node_list);
     if not comm_enable:
         frame("Communication disabled: 'aiohttp' library not found.", "RED")
         return
     not_for_share = [
-        'split_long_string', 'get_computer_name', 'get_all_lan_ips', 'auto', 
-        'on_startup', 'on_cleanup', 'handle_get_root', 'handle_get_status', 
-        'handle_post_rpc', 'handle_get_favicon', 'discover_and_update_nodes', 
-        'discovery_loop', 'scan_port_wrapper', 'check_node_status_wrapper', 
-        'run_local_function', '_send_request', '_process_single_call', '_format_response', 
+        'split_long_string', 'get_computer_name', 'get_all_lan_ips', 'auto',
+        'on_startup', 'on_cleanup', 'handle_get_root', 'handle_get_status',
+        'handle_post_rpc', 'handle_get_favicon', 'discover_and_update_nodes',
+        'discovery_loop', 'scan_port_wrapper', 'check_node_status_wrapper',
+        'run_local_function', '_send_request', '_process_single_call', '_format_response',
         'Node', 'add_cors_headers',
         'notif_win', 'notif_linux', 'speak_win', 'speak_rhvoice'
     ]
@@ -656,7 +715,12 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
     app.on_cleanup.append(on_cleanup)
     frame(f"Listening on: http://{ip}:{port}", "GREEN")
     try:
-        web.run_app(app, host=ip, port=port, print=None if not debug else True, access_log=None if not debug else sys.stdout)
+        web.run_app(app, host=ip, port=port)
+    except OSError as e:
+        if "address already in use" in str(e).lower():
+            frame(f"ERROR: The address {ip}:{port} is already in use!", "RED")
+        else:
+            frame(f"An unexpected OS error occurred: {e}", "RED")
     except (KeyboardInterrupt, SystemExit):
         pass
     finish_time = time.time()
