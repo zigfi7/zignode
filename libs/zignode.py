@@ -129,7 +129,6 @@ try:
             speak = speak_rhvoice
 except (ImportError, FileNotFoundError): pass
 def msg(message, language="English"):
-    """Displays a message in a frame and optionally speaks it."""
     frame(str(message))
     if speak:
         try: speak(message, language)
@@ -139,7 +138,6 @@ def msg(message, language="English"):
         except: pass
     return f'Message processed: {message}'
 async def run_local_function(scope, func_name, params):
-    """Executes a function available on the local node."""
     params = [params] if not isinstance(params, list) else params
     try:
         target_func = scope.get(func_name)
@@ -152,7 +150,6 @@ async def run_local_function(scope, func_name, params):
     except Exception as e:
         return {"error": f"Execution of '{func_name}' failed: {e}"}
 def _format_response(id, value, status="Success", routed_by=None, error=None):
-    """Standardizes the structure for all call responses."""
     response = {"id": id, "status": status, "value": value}
     if routed_by:
         response["routed_by"] = routed_by
@@ -161,7 +158,6 @@ def _format_response(id, value, status="Success", routed_by=None, error=None):
         response["error"] = error
     return response
 async def _send_request(session, target_node_data, payload):
-    """Sends a POST request to a target node and returns the result list."""
     if not target_node_data.get("addresses"):
         return [_format_response(payload.get('id', 'unknown'), None, status="Failed", error="Target node has no known address.")]
     target_ip, target_port = target_node_data["addresses"][0]
@@ -185,7 +181,6 @@ async def _send_request(session, target_node_data, payload):
     except Exception as e:
         return [_format_response(target_id, None, status="Failed", error=f"Request failed: {e}")]
 async def _process_single_call(app, payload):
-    """Contains the main logic for executing a single function call."""
     node = app['node']
     session = app['client_session']
     func_name = payload.get("call")
@@ -250,7 +245,7 @@ async def _process_single_call(app, payload):
         return final_result
     return _format_response("auto", None, status="Failed", error=f"No node found with capability '{func_name}'.")
 class Node:
-    def __init__(self, local_functions):
+    def __init__(self, local_functions, scan_mode='full'):
         self.id = str(uuid.uuid4())
         self.start_time = time.time()
         self.script_name = os.path.basename(sys.argv[0])
@@ -259,8 +254,9 @@ class Node:
         self.scan_targets = {}
         self.lock = asyncio.Lock()
         self.local_functions = local_functions
+        self.scan_mode = scan_mode
         self.identity = {
-            "id": self.id, "myname": self.script_name, "version": "23.1-smarter-cleanup",
+            "id": self.id, "myname": self.script_name, "version": "24",
             "type": "complex" if comm_enable and scan_enable else "simple",
             "started": self.start_time, "hostname": self.hostname,
             "platform": platform.system(), "capabilities": list(self.local_functions.keys()),
@@ -329,11 +325,11 @@ async def scan_port_wrapper(sem, ip, port):
             return (ip, port)
         except (asyncio.TimeoutError, OSError):
             return None
-async def check_node_status_wrapper(sem, session, ip, port):
+async def check_node_status_wrapper(sem, session, ip, port, timeout=5.0):
     async with sem:
         url = f"http://{ip}:{port}/status"
         try:
-            async with session.get(url, timeout=5.0) as response:
+            async with session.get(url, timeout=timeout) as response:
                 if response.status == 200:
                     data = await response.json()
                     node_id = data.get("id")
@@ -378,7 +374,8 @@ async def discover_and_update_nodes(app, full_scan=False):
         frame(f"This discovery cycle will check {len(targets_this_cycle)} unique addresses.", "YELLOW")
     port_scan_tasks = [scan_port_wrapper(sem, ip, port) for ip, port in targets_this_cycle]
     open_hosts = {res for res in await asyncio.gather(*port_scan_tasks) if res}
-    status_check_tasks = [check_node_status_wrapper(sem, session, ip, port) for ip, port in open_hosts]
+    check_timeout = 5.0 if full_scan else 12.0
+    status_check_tasks = [check_node_status_wrapper(sem, session, ip, port, timeout=check_timeout) for ip, port in open_hosts]
     status_results = await asyncio.gather(*status_check_tasks)
     found_nodes_buffer = {}
     responsive_addresses = set()
@@ -472,10 +469,13 @@ async def discover_and_update_nodes(app, full_scan=False):
 async def discovery_loop(app):
     await asyncio.sleep(5)
     scan_counter = 0
+    node = app['node']
     while True:
         try:
             scan_counter += 1
-            is_full_scan = (scan_counter == 1 or scan_counter % 12 == 0)
+            is_full_scan = False
+            if node.scan_mode == 'full':
+                is_full_scan = (scan_counter == 1 or scan_counter % 12 == 0)
             await discover_and_update_nodes(app, full_scan=is_full_scan)
         except asyncio.CancelledError:
             break
@@ -618,7 +618,6 @@ async def handle_get_root(request):
     </html>
     """
     return add_cors_headers(web.Response(text=html, content_type='text/html'))
-    return add_cors_headers(web.Response(text=html, content_type='text/html'))
 async def handle_get_status(request):
     node = request.app['node']
     async with node.lock:
@@ -658,7 +657,8 @@ async def handle_get_favicon(request):
 async def on_startup(app):
     if comm_enable:
         app['client_session'] = aiohttp.ClientSession()
-        if scan_enable:
+        node = app['node']
+        if scan_enable and node.scan_mode != 'disabled':
             app['discovery_task'] = asyncio.create_task(discovery_loop(app))
 async def on_cleanup(app):
     if 'discovery_task' in app and app.get('discovery_task'):
@@ -667,7 +667,7 @@ async def on_cleanup(app):
         except asyncio.CancelledError: pass
     if 'client_session' in app:
         await app['client_session'].close()
-def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=MANUAL_NODE_LIST, debug_mode=False):
+def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=MANUAL_NODE_LIST, debug_mode=False, scan='full'):
     global debug, MANUAL_NODE_LIST
     debug = debug_mode
     MANUAL_NODE_LIST.extend(manual_node_list);
@@ -695,13 +695,13 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
         shareable_functions['notif'] = notif
     if speak:
         shareable_functions['speak'] = speak
-    node = Node(shareable_functions)
+    node = Node(shareable_functions, scan_mode=scan)
     start_message = [
-    f"       \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m Hello! My name is \033[33m{node.script_name} \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==",
-    f"         Node ID    : \033[35m{node.id}\033[34m",
-    f"         Version    : \033[92m{node.identity['version']}\033[34m",
-    f"         Scan/Comm  : \033[93m{'enabled' if scan_enable and comm_enable else 'disabled'}\033[34m",
-    f"         Started at : \033[96m{datetime.datetime.fromtimestamp(start_time).strftime('%Y_%m_%d %H:%M:%S')}\033[39m"]
+    f"        \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m Hello! My name is \033[33m{node.script_name} \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==",
+    f"         Node ID     : \033[35m{node.id}\033[34m",
+    f"         Version     : \033[92m{node.identity['version']}\033[34m",
+    f"         Scan/Comm   : \033[93m{'enabled' if scan_enable and comm_enable else 'disabled'}\033[34m",
+    f"         Started at  : \033[96m{datetime.datetime.fromtimestamp(start_time).strftime('%Y_%m_%d %H:%M:%S')}\033[39m"]
     frame(start_message, "BLUE", 70)
     app = web.Application()
     app['node'] = node
@@ -725,14 +725,14 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
         pass
     finish_time = time.time()
     finish_message = [
-        "       \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m My name is \033[33m"
+        "        \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m My name is \033[33m"
         + node.script_name +
         "\033[39m goodbye. \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==",
-        "    Started run  : \033[93m " +
+        "     Started run   : \033[93m " +
         datetime.datetime.fromtimestamp(start_time).strftime("%Y_%m_%d %H:%M:%S"),
-        "    Finished run : \033[93m " +
+        "     Finished run  : \033[93m " +
         datetime.datetime.fromtimestamp(finish_time).strftime("%Y_%m_%d %H:%M:%S"),
-        "    Elapsed time : \033[93m " +
+        "     Elapsed time  : \033[93m " +
         str(datetime.timedelta(seconds=int(finish_time - start_time)))
     ]
     print ("")
