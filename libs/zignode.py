@@ -54,6 +54,7 @@ def split_long_string(input_string, max_length=90):
     if current_string:
         result_strings.append(current_string.strip())
     return result_strings
+
 def frame(lines="", COLOR="NOCOLOR", frames=25, framemax=92, display=True):
     lineslst = isinstance(lines, list)
     linelist = []
@@ -88,12 +89,13 @@ def frame(lines="", COLOR="NOCOLOR", frames=25, framemax=92, display=True):
     output_lines.append(cc[COLOR] + "┌" + "─" * frame_width + "┐" + cc[COLOR])
     for sline in linelist:
         padding = " " * (frame_width - len(re.sub(r"\033\[\d+m", "", str(sline))) - 2)
-        output_lines.append(f"│ {cc['NOCOLOR']}{sline}{padding}{cc[COLOR]} │")
+        output_lines.append(f"{cc[COLOR]}│ {cc['NOCOLOR']}{sline}{padding}{cc[COLOR]} │")
     output_lines.append(cc[COLOR] + "└" + "─" * frame_width + "┘" + cc["RESET"])
     output_string = "\n".join(output_lines)
     if display:
         print(output_string)
     return output_string
+
 def get_computer_name():
     try:
         return subprocess.check_output(["hostname"], text=True).strip()
@@ -256,7 +258,7 @@ class Node:
         self.local_functions = local_functions
         self.scan_mode = scan_mode
         self.identity = {
-            "id": self.id, "myname": self.script_name, "version": "24",
+            "id": self.id, "myname": self.script_name, "version": "24.1",
             "type": "complex" if comm_enable and scan_enable else "simple",
             "started": self.start_time, "hostname": self.hostname,
             "platform": platform.system(), "capabilities": list(self.local_functions.keys()),
@@ -357,9 +359,9 @@ async def discover_and_update_nodes(app, full_scan=False):
     targets_this_cycle = scan_targets_to_check.union(set(MANUAL_NODE_LIST))
     if debug and MANUAL_NODE_LIST:
         frame([
-            f"Starting with manual node list:",
-            f"  Manual nodes count: {len(MANUAL_NODE_LIST)}",
-            f"  Manual nodes: {MANUAL_NODE_LIST if MANUAL_NODE_LIST else 'None'}"
+            f"Manual zignode list:",
+            *MANUAL_NODE_LIST,
+            f"Manual zignodes count: {len(MANUAL_NODE_LIST)}",
             ], "VIOLET")
     targets_this_cycle.add(("127.0.0.1", default_port))
     if debug:
@@ -498,87 +500,97 @@ async def handle_get_root(request):
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Node: {node.id[:8]}</title>
-        <style>
-            :root {{
-                --background-color: #1e1e1e;
-                --text-color: #e0e0e0;
-                --primary-color: #bb86fc;
-                --secondary-color: #3700b3;
-                --surface-color: #2a2a2a;
-                --border-color: #333333;
-                --success-color: #03dac6;
-                --error-color: #cf6679;
-            }}
-            body {{
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                background-color: var(--background-color);
-                color: var(--text-color);
-                margin: 0;
-                padding: 2rem;
-            }}
-            main {{
-                margin: auto;
-            }}
-            h2, h3 {{
-                color: var(--primary-color);
-                border-bottom: 1px solid var(--border-color);
-                padding-bottom: 10px;
-                font-weight: 500;
-            }}
-            table {{
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 20px;
-                margin-bottom: 30px;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            }}
-            th, td {{
-                border: 1px solid var(--border-color);
-                padding: 12px 15px;
-                text-align: left;
-                word-break: break-all;
-            }}
-            th {{
-                background-color: var(--secondary-color);
-                color: var(--text-color);
-                font-weight: 600;
-            }}
-            td {{
-                background-color: var(--surface-color);
-            }}
-            b {{
-                color: var(--text-color);
-                font-weight: 600;
-            }}
-            code {{
-                background-color: var(--border-color);
-                color: var(--primary-color);
-                padding: 3px 6px;
-                border-radius: 4px;
-                font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
-            }}
-            .header-container {{
-                display: flex;
-                align-items: center;
-                gap: 25px;
-                margin-bottom: 2rem;
-                flex-wrap: wrap;
-            }}
-            .header-container svg {{
-                filter: drop-shadow(0 0 8px rgba(187, 134, 252, 0.5));
-                flex-shrink: 0;
-            }}
-            .status-active {{
-                color: var(--success-color);
-                font-weight: bold;
-            }}
-            .status-inactive {{
-                color: var(--error-color);
-            }}
-            a {{
-                color: var(--primary-color);
-            }}
-        </style>
+    <style>
+        :root {{
+            --background-color: #20232a;
+            --text-color: #e0e0e0;
+            --primary-color: #8e44ad; 
+            --accent-color: #bb86fc;  
+            --surface-color: #282c34;
+            --border-color: #3a3f4b;
+
+            --success-color: #4caf50;
+            --error-color: #e53935;
+            --warn-color: #ff9800;
+            --info-color: #2196f3;
+
+            --highlight-color: #c2185b;
+        }}
+
+        body {{
+            font-family: system-ui, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+        }}
+
+        h2, h3 {{
+            border-left: 6px solid var(--primary-color);
+            padding-left: 1rem;
+            margin-top: 2rem;
+            color: var(--text-color);
+        }}
+
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }}
+
+        th {{
+            background-color: var(--surface-color);
+            color: var(--accent-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--primary-color);
+        }}
+
+        td {{
+            background-color: #1c1f26;
+            color: var(--text-color);
+        }}
+
+        th, td {{
+            padding: 12px;
+            border: 1px solid var(--border-color);
+        }}
+
+        .status-active {{
+            color: var(--success-color);
+            font-weight: bold;
+        }}
+
+        .status-inactive {{
+            color: var(--error-color);
+        }}
+
+        .header-container {{
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 2rem;
+        }}
+
+        .header-container svg {{
+            filter: drop-shadow(0 0 6px var(--primary-color));
+        }}
+
+        code {{
+            background-color: #2e2e2e;
+            color: var(--accent-color);
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }}
+
+        a {{
+            color: var(--accent-color);
+            text-decoration: underline dashed;
+        }}
+    </style>
     </head>
     <body>
         <main>
@@ -715,7 +727,7 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
     app.on_cleanup.append(on_cleanup)
     frame(f"Listening on: http://{ip}:{port}", "GREEN")
     try:
-        web.run_app(app, host=ip, port=port)
+        web.run_app(app, host=ip, port=port, print=None)
     except OSError as e:
         if "address already in use" in str(e).lower():
             frame(f"ERROR: The address {ip}:{port} is already in use!", "RED")
