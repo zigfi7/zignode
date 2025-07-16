@@ -159,7 +159,7 @@ Each node automatically hosts a web page at `http://<ip>:8635/`, showing:
 
 ---
 
-## 🧑�💻 Authors & Credits
+## 🧑‍💻 Authors & Credits
 
 * Concept, architecture & integration: **Zigfi** ([GitHub](https://github.com/zigfi7))
 * Early implementations & sync version: written by Zigfi
@@ -178,4 +178,3 @@ Feedback, forks and PRs welcome!
 ## 📜 License
 
 This project is licensed under the **Apache 2.0 License**. See [LICENSE](./LICENSE) for details.
-
