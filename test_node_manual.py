@@ -55,7 +55,7 @@ if __name__ == '__main__':
     zignode.auto(
         external_locals=locals(),
         manual_node_list=my_manual_nodes,
-        debug_mode=True
+        debug=True
     )
 
 # Notes:
