@@ -11,7 +11,6 @@
             padding: 0;
             overflow: hidden;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #1a1a1a;
@@ -19,7 +18,6 @@
             display: flex;
             flex-direction: column;
         }
-
         .top-bar {
             background: #2d2d2d;
             padding: 8px 20px;
@@ -30,19 +28,16 @@
             border-bottom: 1px solid #444;
             z-index: 2000;
         }
-
         .top-bar h1 {
             font-size: 1.2em;
             margin: 0;
             color: #e0e0e0;
         }
-
         .connection-controls {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-
         .top-bar input {
             background: #3d3d3d;
             border: 1px solid #555;
@@ -52,7 +47,6 @@
             font-size: 14px;
             width: 120px;
         }
-
         .top-bar button {
             background: #6a4c93;
             color: white;
@@ -67,7 +61,6 @@
         .top-bar button:hover {
             background: #5a3c83;
         }
-
         .status {
             padding: 6px 10px;
             border-radius: 5px;
@@ -75,7 +68,6 @@
             margin-left: auto;
             font-size: 14px;
         }
-
         .status.connected { background: #2d5a2d; color: #90ee90; }
         .status.error { background: #5a2d2d; color: #ff9090; }
         
@@ -85,7 +77,6 @@
             overflow: auto;
             flex-grow: 1;
         }
-
         .node {
             position: absolute;
             width: 80px;
@@ -96,12 +87,10 @@
             display: flex;
             justify-content: center;
         }
-
         .node:hover {
             transform: scale(1.1);
             z-index: 100;
         }
-
         .node-svg {
             filter: drop-shadow(0 0 5px rgba(106, 76, 147, 0.5));
             width: 80px;
@@ -140,7 +129,6 @@
         .node-details.visible {
             display: block;
         }
-
         .node-details.pos-down {
             top: 105px;
         }
@@ -157,28 +145,23 @@
             font-size: 12px;
             word-break: break-all;
         }
-
         .node-details .detail-row {
             margin-bottom: 4px;
             display: flex;
             align-items: flex-start;
             font-size: 11px;
         }
-
         .node-details .detail-label {
             font-weight: bold;
             min-width: 80px;
             color: #ccc;
         }
-
         .node-details .detail-value {
             color: #e0e0e0;
             word-break: break-word;
         }
-        /* Style for 'Active' status in tooltip */
         .status-active { color: #50e3c2; }
         .status-inactive { color: #e35064; }
-
         .connection-line {
             position: absolute;
             background: #6a4c93;
@@ -191,7 +174,6 @@
             background: #555;
             opacity: 0.4;
         }
-
         .legend {
             position: absolute;
             bottom: 10px;
@@ -203,12 +185,142 @@
             border: 1px solid #555;
             z-index: 1001;
         }
-
         .legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 10px; }
         .legend-color { width: 20px; height: 20px; border-radius: 3px; }
         .main-node { background: #6a4c93; }
         .direct-node { background: #4a6c93; }
         .nested-node { background: #934a6c; }
+
+        .context-menu {
+            position: absolute;
+            background: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 8px;
+            min-width: 180px;
+            z-index: 20000;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.2s;
+            font-size: 13px;
+        }
+
+        .context-menu-item:hover {
+            background: #3d3d3d;
+        }
+
+        .function-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 30000;
+        }
+
+        .function-modal-content {
+            background: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 12px;
+            padding: 25px;
+            min-width: 400px;
+            max-width: 500px;
+        }
+
+        .function-modal h3 {
+            margin: 0 0 20px 0;
+            color: #8a6db3;
+            font-size: 18px;
+        }
+
+        .function-modal .input-group {
+            margin-bottom: 15px;
+        }
+
+        .function-modal label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #ccc;
+        }
+
+        .function-modal input, .function-modal select, .function-modal textarea {
+            width: 100%;
+            background: #3d3d3d;
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 8px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .function-modal textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .function-modal .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .function-modal button {
+            background: #6a4c93;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .function-modal button:hover {
+            background: #5a3c83;
+        }
+
+        .function-modal button.cancel {
+            background: #666;
+        }
+
+        .function-modal button.cancel:hover {
+            background: #555;
+        }
+
+        .function-result {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #1a1a1a;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .function-result.success {
+            border-color: #50e3c2;
+            color: #50e3c2;
+        }
+
+        .function-result.error {
+            border-color: #e35064;
+            color: #e35064;
+        }
     </style>
 </head>
 <body>
@@ -224,7 +336,6 @@
         </div>
         <div id="status" class="status">Disconnected</div>
     </div>
-
     <div class="network-container" id="networkContainer">
         <div class="legend">
               <div class="legend-item"><div class="legend-color main-node"></div><span>Main Node</span></div>
@@ -233,11 +344,48 @@
         </div>
     </div>
 
+            <div class="context-menu" id="contextMenu">
+        <div id="contextMenuItems"></div>
+        <div class="context-menu-item" onclick="executeFunction('custom')">Custom Function</div>
+    </div>
+
+    <div class="function-modal" id="functionModal">
+        <div class="function-modal-content">
+            <h3 id="modalTitle">Execute Function</h3>
+            <div class="input-group">
+                <label for="targetNodeId">Target Node ID:</label>
+                <input type="text" id="targetNodeId" readonly>
+            </div>
+            <div class="input-group">
+                <label for="functionName">Function:</label>
+                <input type="text" id="functionName" placeholder="Function name">
+            </div>
+            <div class="input-group">
+                <label for="functionParams">Arguments (JSON array):</label>
+                <textarea id="functionParams" placeholder='["arg1", "arg2"] or empty for no args'></textarea>
+            </div>
+            <div class="input-group">
+                <label for="functionKwargs">Keyword Arguments (JSON object):</label>
+                <textarea id="functionKwargs" placeholder='{"key1": "value1", "key2": "value2"} or empty'></textarea>
+            </div>
+            <div class="button-group">
+                <button class="cancel" onclick="closeFunctionModal()">Cancel</button>
+                <button onclick="sendFunction()">Execute</button>
+            </div>
+            <div id="functionResult" class="function-result" style="display: none;"></div>
+        </div>
+    </div>
+
     <script>
         let isConnected = false;
         let refreshInterval = null;
+        let currentSelectedNode = null;
+        let networkData = null;
 
-        function toggleConnection() { if (isConnected) disconnect(); else connect(); }
+        function toggleConnection() { 
+            if (isConnected) disconnect(); 
+            else connect(); 
+        }
         
         function connect() {
             const host = document.getElementById('host').value, port = document.getElementById('port').value;
@@ -273,6 +421,7 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const data = await response.json();
                 if (!data.id) throw new Error('Invalid data format');
+                networkData = data;
                 updateStatus(`Updated: ${new Date().toLocaleTimeString()}`, 'connected');
                 renderNetwork(data);
             } catch (error) {
@@ -319,7 +468,6 @@
                     });
                 }
             });
-
             drawConnections(data, nodePositions);
             
             nodePositions.forEach((pos, id) => {
@@ -370,29 +518,27 @@
             container.appendChild(line);
         }
 
-        // --- UPDATED NODE DRAWING FUNCTION ---
         function drawNode(nodeId, nodeData, position) {
             const container = document.getElementById('networkContainer');
             const node = document.createElement('div');
             node.className = 'node';
             node.style.left = (position.x - 40) + 'px';
             node.style.top = (position.y - 40) + 'px';
+            node.dataset.nodeId = nodeId;
             
             const nodeColor = position.type === 'main' ? '#6a4c93' : 
                               position.type === 'direct' ? '#4a6c93' : '#934a6c';
 
-            // Helper to format the address
             const formatAddress = (data) => {
                 if (data.addresses && data.addresses.length > 0) {
-                    return data.addresses[0].join(':'); // e.g., "192.168.1.10:8635"
+                    return data.addresses[0].join(':');
                 }
                 if (data.ip) {
-                    return data.ip; // For simple nodes like Wemos
+                    return data.ip;
                 }
                 return 'N/A';
             };
 
-            // Helper to format last seen time
             const formatLastSeen = (timestamp) => {
                 if (!timestamp) return 'N/A';
                 const now = Date.now() / 1000;
@@ -429,8 +575,22 @@
             node.addEventListener('mouseenter', (e) => {
                 positionTooltip(e.currentTarget, tooltip);
             });
-            node.addEventListener('mouseleave', () => {
-                tooltip.classList.remove('visible', 'pos-up', 'pos-down');
+            node.addEventListener('mouseleave', (e) => {
+                if (!e.relatedTarget || !e.relatedTarget.closest('.context-menu')) {
+                    tooltip.classList.remove('visible', 'pos-up', 'pos-down');
+                }
+            });
+
+            node.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e, nodeId);
+            });
+
+            node.addEventListener('click', (e) => {
+                if (e.detail === 2) {
+                    currentSelectedNode = nodeId;
+                    executeFunction('custom');
+                }
             });
         }
         
@@ -443,9 +603,7 @@
             const tooltipHeight = tooltipElement.offsetHeight;
             tooltipElement.classList.remove('visible');
             tooltipElement.style.visibility = '';
-
             const spaceBelow = containerRect.bottom - nodeRect.bottom;
-
             if (spaceBelow < tooltipHeight + 20) {
                 tooltipElement.classList.add('pos-up');
             } else {
@@ -454,6 +612,191 @@
             
             tooltipElement.classList.add('visible');
         }
+
+        function showContextMenu(e, nodeId) {
+            currentSelectedNode = nodeId;
+            const contextMenu = document.getElementById('contextMenu');
+            const contextMenuItems = document.getElementById('contextMenuItems');
+            
+            const nodeData = getNodeData(nodeId);
+            const capabilities = nodeData.capabilities || [];
+            
+            contextMenuItems.innerHTML = '';
+            capabilities.forEach(capability => {
+                const item = document.createElement('div');
+                item.className = 'context-menu-item';
+                item.textContent = capability;
+                item.onclick = () => executeFunction('capability', capability);
+                contextMenuItems.appendChild(item);
+            });
+            
+            contextMenu.style.display = 'block';
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+        }
+
+        function hideContextMenu() {
+            document.getElementById('contextMenu').style.display = 'none';
+        }
+
+        function getNodeData(nodeId) {
+            if (!networkData) return {};
+            
+            if (nodeId === networkData.id) {
+                return networkData;
+            }
+            
+            if (networkData.abut_nodes && networkData.abut_nodes[nodeId]) {
+                return networkData.abut_nodes[nodeId];
+            }
+            
+            const directAbuts = Object.values(networkData.abut_nodes || {});
+            for (const parent of directAbuts) {
+                if (parent?.abut_nodes?.[nodeId]) {
+                    return parent.abut_nodes[nodeId];
+                }
+            }
+            
+            return {};
+        }
+
+        function executeFunction(type, predefinedFunction = null) {
+            hideContextMenu();
+            
+            const modal = document.getElementById('functionModal');
+            const titleEl = document.getElementById('modalTitle');
+            const nodeIdEl = document.getElementById('targetNodeId');
+            const functionNameEl = document.getElementById('functionName');
+            const paramsEl = document.getElementById('functionParams');
+            const kwargsEl = document.getElementById('functionKwargs');
+            const resultEl = document.getElementById('functionResult');
+            
+            nodeIdEl.value = currentSelectedNode;
+            resultEl.style.display = 'none';
+            resultEl.textContent = '';
+            resultEl.className = 'function-result';
+            
+            if (type === 'capability') {
+                titleEl.textContent = `Execute: ${predefinedFunction}`;
+                functionNameEl.value = predefinedFunction;
+                paramsEl.value = '[]';
+                kwargsEl.value = '{}';
+            } else {
+                titleEl.textContent = 'Execute Custom Function';
+                functionNameEl.value = '';
+                paramsEl.value = '[]';
+                kwargsEl.value = '{}';
+            }
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeFunctionModal() {
+            document.getElementById('functionModal').style.display = 'none';
+        }
+
+        async function sendFunction() {
+            const nodeId = document.getElementById('targetNodeId').value;
+            const functionName = document.getElementById('functionName').value.trim();
+            const argsText = document.getElementById('functionParams').value.trim();
+            const kwargsText = document.getElementById('functionKwargs').value.trim();
+            const resultEl = document.getElementById('functionResult');
+            
+            if (!functionName) {
+                showResult('Function name is required', 'error');
+                return;
+            }
+            
+            const host = document.getElementById('host').value;
+            const port = document.getElementById('port').value;
+            
+            try {
+                let args = [];
+                let kwargs = {};
+                
+                if (argsText) {
+                    try {
+                        args = JSON.parse(argsText);
+                        if (!Array.isArray(args)) {
+                            throw new Error('Args must be an array');
+                        }
+                    } catch (e) {
+                        showResult(`Invalid args format: ${e.message}`, 'error');
+                        return;
+                    }
+                }
+                
+                if (kwargsText) {
+                    try {
+                        kwargs = JSON.parse(kwargsText);
+                        if (typeof kwargs !== 'object' || Array.isArray(kwargs)) {
+                            throw new Error('Kwargs must be an object');
+                        }
+                    } catch (e) {
+                        showResult(`Invalid kwargs format: ${e.message}`, 'error');
+                        return;
+                    }
+                }
+                
+                let payload = {
+                    call: functionName,
+                    args: args,
+                    id: nodeId
+                };
+                
+                if (Object.keys(kwargs).length > 0) {
+                    payload.kwargs = kwargs;
+                }
+                
+                showResult('Executing function...', 'info');
+                
+                const response = await fetch(`http://${host}:${port}/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.text();
+                let parsedResult;
+                
+                try {
+                    parsedResult = JSON.parse(result);
+                } catch (e) {
+                    parsedResult = result;
+                }
+                
+                if (response.ok) {
+                    showResult(JSON.stringify(parsedResult, null, 2), 'success');
+                } else {
+                    showResult(`Error: ${parsedResult.error || parsedResult}`, 'error');
+                }
+            } catch (error) {
+                showResult(`Network Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showResult(message, type) {
+            const resultEl = document.getElementById('functionResult');
+            resultEl.textContent = message;
+            resultEl.className = `function-result ${type}`;
+            resultEl.style.display = 'block';
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.context-menu') && !e.target.closest('.node')) {
+                hideContextMenu();
+            }
+        });
+
+        document.getElementById('functionModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeFunctionModal();
+            }
+        });
 
         document.getElementById('autoRefresh').addEventListener('change', () => {
             if (isConnected) {
@@ -464,9 +807,17 @@
                 }
             }
         });
-
+        
         document.querySelectorAll('.connection-controls input').forEach(input => {
             input.addEventListener('keypress', e => { if (e.key === 'Enter') toggleConnection(); });
+        });
+
+        window.addEventListener('load', () => {
+            const host = document.getElementById('host').value;
+            const port = document.getElementById('port').value;
+            if (host && port) {
+                connect();
+            }
         });
     </script>
 </body>

@@ -474,7 +474,7 @@ class Node:
     self.local_functions = local_functions
     self.scan_mode = scan_mode
     self.identity = {
-      "id": self.id, "myname": self.script_name, "version": "25",
+      "id": self.id, "myname": self.script_name, "version": "25.1",
       "type": "complex" if comm_enable and scan_enable else "simple",
       "started": self.start_time, "hostname": self.hostname,
       "platform": platform.system(), "capabilities": list(self.local_functions.keys()),
@@ -779,6 +779,8 @@ async def handle_get_root(request):
   </html>
   """
   return add_cors_headers(web.Response(text=html, content_type='text/html'))
+async def handle_preflight(request):
+    return add_cors_headers(web.Response())
 async def handle_get_status(request):
   node = request.app['node']
   async with node.lock:
@@ -842,10 +844,11 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
     return
   internal_not_for_share = [
     'split_long_string', 'get_computer_name', 'get_all_lan_ips', 'auto',
-    'on_startup', 'on_cleanup', 'handle_get_root', 'handle_get_status',
-    'handle_post_rpc', 'handle_get_favicon', 'discover_and_update_nodes',
-    'discovery_loop', 'scan_port_wrapper', 'check_node_status_wrapper',
-    'run_local_function', '_send_request', '_process_single_call', '_format_response',
+    'on_startup', 'on_cleanup', 'handle_preflight', 'handle_get_root', 
+    'handle_get_status', 'handle_post_rpc', 'handle_get_favicon', 
+    'discover_and_update_nodes', 'discovery_loop', 'scan_port_wrapper', 
+    'check_node_status_wrapper', 'run_local_function', 
+    '_send_request', '_process_single_call', '_format_response',
     'Node', 'add_cors_headers', 'notif_win', 'notif_linux', 'speak_win', 'speak_rhvoice'
   ]
   if not4share:
@@ -878,6 +881,7 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
   app.router.add_get("/status/", handle_get_status)
   app.router.add_get("/favicon.ico", handle_get_favicon)
   app.router.add_post("/", handle_post_rpc)
+  app.router.add_route("OPTIONS", "/", handle_preflight)
   app.on_startup.append(on_startup)
   app.on_cleanup.append(on_cleanup)
   frame(f"Listening on: http://{ip}:{port}", "GREEN")
