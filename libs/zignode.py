@@ -463,10 +463,10 @@ async def _process_single_call(app, payload):
     return final_result
   return _format_response("auto", None, status="Failed", error=f"No node found with capability '{func_name}'.")
 class Node:
-  def __init__(self, local_functions, scan_mode='full'):
+  def __init__(self, local_functions, scan_mode='full', name=None):
     self.id = str(uuid.uuid4())
     self.start_time = time.time()
-    self.script_name = os.path.basename(sys.argv[0])
+    self.script_name = name if name else os.path.basename(sys.argv[0])
     self.hostname = get_computer_name()
     self.abuts = {}
     self.scan_targets = {}
@@ -474,7 +474,7 @@ class Node:
     self.local_functions = local_functions
     self.scan_mode = scan_mode
     self.identity = {
-      "id": self.id, "myname": self.script_name, "version": "25.1",
+      "id": self.id, "myname": self.script_name, "version": "25.2",
       "type": "complex" if comm_enable and scan_enable else "simple",
       "started": self.start_time, "hostname": self.hostname,
       "platform": platform.system(), "capabilities": list(self.local_functions.keys()),
@@ -559,7 +559,7 @@ async def check_node_status_wrapper(sem, session, ip, port, timeout=5.0):
 async def discover_and_update_nodes(app, full_scan=False):
   node = app['node']
   session = app['client_session']
-  sem = asyncio.Semaphore(512)
+  sem = asyncio.Semaphore(200)
   async with node.lock:
     scan_targets_to_check = {addr for addr, data in node.scan_targets.items() if data.get("fails", 0) < MAX_SCAN_FAILS}
     if full_scan:
@@ -697,10 +697,15 @@ async def discovery_loop(app):
       await discover_and_update_nodes(app, full_scan=is_full_scan)
     except asyncio.CancelledError:
       break
+    except OSError as e:
+      if debug:
+        frame(f"Network error in discovery loop: {e}.", "ORANGE")
+      pass
     except (AttributeError, TypeError):
       pass
     except Exception as e:
-      frame(f"Error in discovery loop: {e}", "RED")
+      if debug:
+        frame(f"Error in discovery loop: {e}", "RED")
     await asyncio.sleep(30)
 def add_cors_headers(response):
   response.headers['Access-Control-Allow-Origin'] = '*'
@@ -836,7 +841,7 @@ async def on_cleanup(app):
     except asyncio.CancelledError: pass
   if 'client_session' in app:
     await app['client_session'].close()
-def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=None, debug=False, scan='full', not4share=None):
+def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_list=None, debug=False, scan='full', not4share=None, name=None):
   globals()['debug'] = debug
   globals()['MANUAL_NODE_LIST'] = manual_node_list or []
   if not comm_enable:
@@ -865,7 +870,7 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
     shareable_functions['notif'] = notif
   if speak:
     shareable_functions['speak'] = speak
-  node = Node(shareable_functions, scan_mode=scan)
+  node = Node(shareable_functions, scan_mode=scan, name=name)
   start_message = [
     f"     \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m Hello! My name is \033[33m{node.script_name} \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==",
     f"          Node ID     : \033[35m{node.id}\033[34m",
@@ -881,7 +886,7 @@ def auto(external_locals=None, ip=default_ip, port=default_port, manual_node_lis
   app.router.add_get("/status/", handle_get_status)
   app.router.add_get("/favicon.ico", handle_get_favicon)
   app.router.add_post("/", handle_post_rpc)
-  app.router.add_route("OPTIONS", "/", handle_preflight)
+  app.router.add_route("OPTIONS", "/{tail:.*}", handle_preflight)
   app.on_startup.append(on_startup)
   app.on_cleanup.append(on_cleanup)
   frame(f"Listening on: http://{ip}:{port}", "GREEN")

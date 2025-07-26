@@ -3,10 +3,8 @@
 import os, sys, platform, subprocess, inspect, time, datetime, uuid, json, base64, re, http.server, socket, threading
 
 start_time = time.time()
-__MyName__ = os.path.basename(sys.argv[0])
 default_ip = "0.0.0.0"
 default_port = 8635
-
 node = None
 cc = {
   "RESET": "\033[0m", "NOCOLOR": "\033[39m", "BLACK": "\033[30m", "DRED": "\033[31m", "DGREEN": "\033[32m",
@@ -29,20 +27,20 @@ def frame(lines="", COLOR="NOCOLOR"):
     print(f"│ {cc['NOCOLOR']}{sline}{padding}{cc[COLOR]} │")
   print(cc[COLOR] + '└' + '─' * frame_width + '┘' + cc["RESET"])
 
-def start():
+def start(node):
   message = [
-    '      \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m Hello! My name is \033[33m' + __MyName__ + ' \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==',
-    f'        Started run : \033[93m {datetime.datetime.fromtimestamp(start_time).strftime("%Y_%m_%d %H:%M:%S")}'
+    '      \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m Hello! My name is \033[33m' + node.identity['myname'] + ' \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==',
+    f'          Started run : \033[93m {datetime.datetime.fromtimestamp(start_time).strftime("%Y_%m_%d %H:%M:%S")}'
   ]
   frame(message, 'BLUE')
 
-def finish():
+def finish(node):
   finish_time = time.time()
   message = [
-    '      \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m My name is \033[33m' + __MyName__ + '\033[39m goodbye. \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==',
-    '   Started run  : \033[93m ' + datetime.datetime.fromtimestamp(start_time).strftime('%Y_%m_%d %H:%M:%S'),
-    '   Finished run : \033[93m ' + datetime.datetime.fromtimestamp(finish_time).strftime('%Y_%m_%d %H:%M:%S'),
-    '   Elapsed time : \033[93m ' + str(datetime.timedelta(seconds=int(finish_time - start_time)))
+    '      \033[34m==\033[35m==\033[91m==\033[93m==\033[92m==\033[96m== \033[39m My name is \033[33m' + node.identity['myname'] + '\033[39m goodbye. \033[96m==\033[92m==\033[93m==\033[91m==\033[35m==\033[34m==',
+    '    Started run   : \033[93m ' + datetime.datetime.fromtimestamp(start_time).strftime('%Y_%m_%d %H:%M:%S'),
+    '    Finished run  : \033[93m ' + datetime.datetime.fromtimestamp(finish_time).strftime('%Y_%m_%d %H:%M:%S'),
+    '    Elapsed time  : \033[93m ' + str(datetime.timedelta(seconds=int(finish_time - start_time)))
   ]
   frame(message, 'ORANGE')
 
@@ -73,11 +71,12 @@ def run_local_function(scope, func_name, params, kwargs):
     return {"error": f"Execution of '{func_name}' failed: {e}"}
 
 class Node:
-  def __init__(self, local_functions):
+  def __init__(self, local_functions, name=None):
     self.id = str(uuid.uuid4())
     self.local_functions = local_functions
+    script_name = name if name else os.path.basename(sys.argv[0])
     self.identity = {
-      "id": self.id, "myname": __MyName__, "version": "24.1-Lite",
+      "id": self.id, "myname": script_name, "version": "24.2-Lite",
       "type": "passive_sync", "started": start_time,
       "hostname": get_computer_name(), "platform": platform.system(),
       "capabilities": list(self.local_functions.keys()),
@@ -95,12 +94,12 @@ class Node:
 def mkhtml(node):
   return f"""
   <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Node: {node.id[:8]}</title><style>body{{font-family:Arial,sans-serif;background-color:#f4f4f4;color:#333;margin:20px}}table{{width:100%;border-collapse:collapse;margin-top:20px}}table,th,td{{border:1px solid #ddd}}th,td{{padding:12px;text-align:left}}th{{background-color:#0066cc;color:white}}</style></head>
+  <title>Node: {node.identity['myname']} ({node.id[:8]})</title><style>body{{font-family:system-ui,sans-serif;background-color:#20232a;color:#e0e0e0;margin:20px}}table{{width:100%;border-collapse:collapse;margin-top:20px}}table,th,td{{border:1px solid #3a3f4b}}th,td{{padding:12px;text-align:left}}th{{background-color:#282c34;color:#bb86fc}}h2 b{{color:#bb86fc}}</style></head>
   <body><h2>Node ID: <b>{node.id}</b></h2>
   <table>
     <tr><td>Hostname</td><td>{node.identity['hostname']}</td></tr>
     <tr><td>Name</td><td>{node.identity['myname']}</td></tr>
-    <tr><td>Capabilities</td><td>{', '.join(node.identity['capabilities'])}</td></tr>
+    <tr><td>Capabilities</td><td>{', '.join(sorted(node.identity['capabilities']))}</td></tr>
   </table></body></html>
   """
 
@@ -111,7 +110,7 @@ class NodeHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
     self.send_header('Access-Control-Allow-Headers', 'Content-Type')
 
   def do_OPTIONS(self):
-    self.send_response(200)
+    self.send_response(204)
     self._send_cors_headers()
     self.end_headers()
 
@@ -180,8 +179,11 @@ class ThreadingHTTPServer(http.server.ThreadingHTTPServer):
     super().__init__(server_address, RequestHandlerClass)
     self.node = node_instance
 
-def auto(external_locals=None, ip=default_ip, port=default_port, not4share=None):
-  start()
+def auto(external_locals=None, ip=default_ip, port=default_port, not4share=None, name=None):
+  global node
+  node = Node(local_functions={}, name=name)
+  start(node)
+  
   internal_not_for_share = [
     'frame', 'start', 'finish', 'get_computer_name', 'mkhtml',
     'run_local_function', '_format_response', 'auto', 'Node',
@@ -197,19 +199,18 @@ def auto(external_locals=None, ip=default_ip, port=default_port, not4share=None)
       if inspect.isfunction(func) and name not in internal_not_for_share and not name.startswith('_')
     })
   
-  global node
-  node = Node(shareable_functions)
+  node.local_functions = shareable_functions
+  node.identity["capabilities"] = list(shareable_functions.keys())
   
   try:
     server = ThreadingHTTPServer((ip, port), NodeHTTPRequestHandler, node_instance=node)
   except OSError as e:
-    if e.errno == 98 or "Address already in use" in str(e):
-      error_message = [
+    if "Address already in use" in str(e):
+      frame([
         "FATAL ERROR: Address already in use",
         f"The address http://{ip}:{port} is occupied by another process."
-      ]
-      frame(error_message, "RED")
-      finish()
+      ], "RED")
+      finish(node)
       return
     else:
       raise
@@ -223,7 +224,7 @@ def auto(external_locals=None, ip=default_ip, port=default_port, not4share=None)
     server.shutdown()
     server.server_close()
     
-  finish()
+  finish(node)
 
 if __name__ == '__main__':
   def multiply(a, b):
