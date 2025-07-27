@@ -1,167 +1,180 @@
-🔌 Zignode – Zero-Effort, Self-Discovering RPC for Python (and Beyond)
+🔌 Zignode – Ultra-Fast, Self-Discovering RPC for Python (and Beyond)
 
-Zignode is a lightweight framework that turns any script (Python and potentially others) into a smart, networked node — often with just a single line of code in Python.
-Forget about manual server configuration and request handling. Simply expose your functions and let the nodes discover, communicate, and collaborate automatically on your local network.
+Tired of writing a dedicated server every time you want to control a device over the network? Zignode is a lightweight tool that transforms any Python script into an intelligent, networked node—often with just one import and a single line of code.
 
-This project was born from the practical needs of an electronics enthusiast: how to easily control devices connected to a Raspberry Pi (or similar systems) without writing a dedicated server for each project?
-Zignode is the answer, offering a universal and instant solution.
+Forget about configuration or handling HTTP requests. Just expose your functions, and Zignode does the rest: nodes automatically discover each other, share their capabilities, and collaborate on remote function calls within your LAN. It's a decentralized RPC that just works.
+🧭 The KISS Philosophy: Simplicity That Works
 
-Although originally implemented in Python, the Zignode protocol is language-agnostic. Support for other platforms (e.g., Arduino/C++, Node.js) is actively being explored.
-✨ Key Features
+Zignode was born from the need to bridge the power of low-level electronics with the convenience of network control—without unnecessary complexity. Following the KISS (Keep It Simple, Stupid) principle, the tool gets out of your way, letting you focus on what truly matters.
 
-    ⚙️ Effortless Python Integration
-    Just call zignode.auto(locals()) at the end of your script — and all your functions become available on the network.
+    For Hobbyists: Control your Raspberry Pi, ESP32, or robotics projects from any computer on your network—without writing a server.
 
-    🌐 Automatic Network Discovery
-    Nodes scan the local network to find others — no config files, no central server required.
+    For Developers and Testers: Build decentralized testing environments and distribute tasks without a central broker.
 
-    🧐 Intelligent Function Routing
-    Zignode builds a "mesh mind" across the network. If a function isn't available locally, it automatically forwards the call to the right node — even via 2-hop neighbors.
+    For Everyone: Create a self-organizing network of smart devices that simply communicate with each other.
 
-    🎯 Flexible Execution
-    Call functions with positional (args) or keyword arguments (kwargs). Target a specific node by its ID or let the network choose the best node for the job.
+✨ Ideal Use Cases
 
-    🖥️ Broad Platform Support
-    Robust, out-of-the-box operation on Linux, Windows, and macOS, including native notifications and Text-to-Speech.
+    Home Automation: A script on your laptop calls turn_on_lights() on a Raspberry Pi in another room.
 
-    🧱 Built-in Web UI
-    Each node hosts a web interface with its function list, status info, and discovered neighbors.
+    Robotics and Electronics: A robot's main unit delegates read_distance() or set_motor_speed() to microcontrollers.
 
-    🛎️ Integrated Utilities
-    Optional built-in helpers: msg(), notif(), and an improved speak() for cross-platform notifications and TTS.
+    Automated Testing: Run tests across multiple platforms (Linux, Windows, mobile) by calling functions on remote nodes.
 
-    🦦 Lightweight & Interoperable
-    Fully async (aiohttp, netifaces2), using standard HTTP/JSON — works great with ESP32, MicroPython, and is extendable to C++/Arduino/Node.js.
+    Simple Distributed Computing: Distribute tasks (e.g., image processing, data validation) across your LAN.
 
-⚙️ Requirements
+🚀 Key Features
 
-    Python 3.8+
+    ⚙️ Effortless Integration: Just add zignode.auto(locals()) at the end of your Python script, and you're online.
 
-    Automatically installs:
+    🌐 Automatic Discovery: Nodes scan the network and find each other. No configuration, central server, or files needed.
 
-        aiohttp
+    🧠 Decentralized Routing: Zignode builds a "mesh mind" and forwards requests to the appropriate nodes, even through other neighbors (2-hop routing).
 
-        netifaces2
+    🎯 Flexible Calls: Supports positional (args) and keyword (kwargs) arguments, targeting by ID, or searching by capability.
 
-📦 Installation
+    🖥️ Cross-Platform: Works on Linux, Windows, and macOS without extra configuration.
+
+    🦦 Lightweight and Interoperable: Based on asyncio and aiohttp, using standard HTTP/JSON. The protocol is compatible with ESP32, MicroPython, and Arduino.
+
+    🔍 Configurable Scanning:
+
+        full: scans entire subnets.
+
+        basic: scans only a defined list of addresses.
+
+        disabled: passive mode, no scanning.
+        The manual address list accepts hostnames, IPv4, IPv6, and custom ports.
+
+    🐞 Debug Mode: Detailed logging of scans, network messages, and internal node events.
+
+    🔖 Custom Node Name: An optional name parameter, e.g., zignode.auto(locals(), name="cmd_zignode").
+
+⚙️ How It Works
+
+Zignode creates a peer-to-peer network where all nodes are equal:
+
+    Start: A node launches a lightweight aiohttp server and (depending on the mode) scans the local network on port 8635.
+
+    Discovery: After finding neighbors, it exchanges its function list and its list of known neighbors. This process is repeated periodically, making the network self-healing.
+
+    Execution:
+
+        Is the function local? → It's executed immediately.
+
+        Not local? → The node asks its direct neighbors.
+
+        Still not found? → It asks its neighbors if their neighbors have the function (2-hop routing).
+
+        Once found, the result is returned along the same path.
+
+        If the function is not found anywhere on the network, an error is returned.
+
+The result: a reliable, mesh RPC network with no single point of failure.
+📦 Installation and Usage
+
+Requirements: Python 3.8+
 
 pip install zignode
 
-🧪 Usage Example (Python)
+Example (my_device.py):
 
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-
 import zignode
 
-def set_servo_position(position: int, speed: int = 100):
-    print(f"SERVO: Setting position to {position} degrees at speed {speed}.")
-    return f"Servo position set to {position}."
+def set_servo(position: int, speed: int = 100):
+    print(f"SERVO: Moving to {position} degrees at speed {speed}.")
+    return f"OK: Servo set to {position}."
 
 def read_temperature():
     temp = 23.5
-    print(f"SENSOR: Read temperature: {temp}°C")
+    print(f"SENSOR: Read temperature: {temp}C")
     return {"temperature": temp, "unit": "Celsius"}
 
 if __name__ == '__main__':
     zignode.auto(
         external_locals=locals(),
-        debug=True,
-        manual_node_list=[('192.168.1.101', 8635)]
+        debug=True
     )
 
-📡 How It Works
+Run it and you're done:
 
-Zignode creates a peer-to-peer network where every node is equal.
+python my_device.py
 
-Startup
+📬 Calling Functions
 
-    The node starts a local HTTP server and begins scanning the network.
+You can use any HTTP client (curl, requests, Postman):
 
-Discovery
-
-    On port 8635, Zignode discovers others, exchanging available functions and neighbors.
-
-Execution
-
-    When a call is made:
-
-        If the function exists locally → execute.
-
-        Else → check neighbors.
-
-        If needed → 2-hop route via neighbor’s neighbors.
-
-This builds a self-healing, mesh-style RPC network.
-📬 How to Call Functions
-
-You can use any HTTP client (curl, requests, Postman) to call functions on any node. The payload is a JSON object defining the call, args (list), kwargs (object), and optional id.
-1. Call a function with positional arguments (args):
+1. Positional arguments (args):
 
 curl -X POST -H "Content-Type: application/json" \
--d '{"call": "set_servo_position", "args": [90]}' \
+-d '{"call": "set_servo", "args": [90]}' \
 http://localhost:8635/
 
-2. Call a function with keyword arguments (kwargs):
+2. Keyword arguments (kwargs):
 
 curl -X POST -H "Content-Type: application/json" \
--d '{"call": "set_servo_position", "kwargs": {"position": 180, "speed": 50}}' \
+-d '{"call": "set_servo", "kwargs": {"position": 180, "speed": 50}}' \
 http://localhost:8635/
 
-3. Call a function on a specific node (by ID):
+🌐 Ecosystem and Integrations
 
-curl -X POST -H "Content-Type: application/json" \
--d '{"call": "read_temperature", "id": "a1b2c3d4-..."}' \
-http://localhost:8635/
+    Web Interface: Each node serves a simple web panel at http://<ip>:8635/ with a list of functions, neighbors, and status. Thanks to CORS support, you can easily create web applications that communicate with the Zignode network.
 
-4. Send a message in another language using kwargs:
+    HTML Client: The repository includes a ready-to-use HTML client that, when connected to any active node, displays an interactive network map and allows you to call functions on any device.
 
-curl -X POST -H "Content-Type: application/json" \
--d '{"call": "msg", "args": ["Wiadomość z sieci!"], "kwargs": {"language": "polish"}}' \
-http://localhost:8635/
+    lite Version: A synchronous zignode-lite version is available, which requires no external dependencies (beyond the standard Python distribution). It operates in passive mode and is ideal for simple applications.
 
-🗐 Web UI
+    Arduino Implementation: An implementation for the Wemos D1 (ESP8266) with WiFi and display support also exists. It acts as a passive node capable of executing commands.
 
-Each node automatically hosts a web page at http://<ip>:8635/, showing:
+    Practical Implementation: The project has been field-tested on a Raspberry Pi controlling 16 servos (PCA9685), with a dedicated web interface for real-time control over the Zignode network.
 
-    Node ID
-
-    Available functions
-
-    Discovered neighbors
-
-    Optional logs
-
-(Screenshot coming soon)
 🚧 Roadmap
+🧱 Near-Term Plans and Considerations:
 
-    [ ] Authentication & API tokens
+    WebSocket Implementation: To increase network responsiveness and enable active event pushing.
 
-    [ ] Optional encryption (Fernet or TLS)
+    Optional Security Layer: Mechanisms (e.g., tokens) to secure the network from unauthorized access. Crucial for commercial or public network applications.
 
-    [ ] Multicast ZeroConf support
+    Timers and Background Tasks: The ability to run long-running tasks without blocking the node, with start and stop options.
 
-    [ ] WebSocket-based push events
+    MQTT Support: Considered for implementation as an additional, optional communication method.
 
-    [ ] Native MicroPython/ESP8266 bridge
+🌌 Long-Term Vision:
 
-    [ ] Arduino/C++ protocol client
+    Distributed Memory: Mechanisms for sharing state and data between nodes.
 
-    [ ] Node.js-compatible Zignode client
+    Functional Groups: Creating virtual "islands" with distributed memory and computing power for more complex tasks.
 
-🧑‍💻 Authors & Credits
+    Abstract Logical Layers: The ability to build more complex, multi-level systems.
 
-    Concept, architecture & integration: Zigfi (GitHub)
+    Direct Protocols: Implementation of non-network communication methods (e.g., via serial ports) for controlling robot swarms.
 
-    Early implementations & sync version: written by Zigfi
+🧑‍💻 The Story of Zignode
 
-    Code support provided by AI assistants:
+Zignode wasn't created in a vacuum. It's the result of years of work with electronics, robotics, and test automation. It all started with a frustration: controlling hardware is fun, but writing the same network layers for it over and over? Tedious.
 
-        Gemini (Google), ChatGPT (OpenAI), Claude (Anthropic), Mistral, Tulu3 and others
+I thought: why can't I just call a function on another device as easily as I do it locally?
 
-    Protocol and structure are designed to be human-readable and language-agnostic
+So I created a system that is:
 
-Feedback, forks and PRs welcome!
+    Decentralized (no single point of failure)
+
+    Self-organizing (zero configuration)
+
+    Intuitive (works right away)
+
+Zignode is a tool that respects your time and simplifies distributed systems.
+👥 Authors and Acknowledgments
+
+    Concept, architecture, implementation: Zigfi
+
+    Protocol: designed to be human-readable and language-agnostic.
+
+    AI Support: with help from models by Google, OpenAI, Anthropic, and others.
+
+All feedback, forks, and PRs are welcome!
 📜 License
 
-This project is licensed under the Apache 2.0 License. See LICENSE for details.
+This project is licensed under the Apache 2.0 License. See the LICENSE file for details.
