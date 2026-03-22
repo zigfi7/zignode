@@ -71,6 +71,8 @@ Zignode tworzy sieć peer-to-peer, gdzie wszystkie węzły są równe:
         Jeśli funkcja nie zostanie odnaleziona w sieci, zwracany jest błąd.
 
 Efekt: niezawodna, siatkowa sieć RPC bez pojedynczego punktu awarii.
+
+W aktualnych wdrożeniach Zignode pełni też rolę control-plane dla dynamicznych wysp logicznych: fizyczny graf node'ów może się zmieniać, ale logiczna grupa funkcji pozostaje stabilna i może być używana przez wyższe warstwy orkiestracji, takie jak Ziginput.
 📦 Instalacja i użycie
 
 Wymagania: Python 3.8+
@@ -145,7 +147,7 @@ http://localhost:8635/
 
     Pamięć rozproszona: Mechanizmy współdzielenia stanu i danych między węzłami.
 
-    Grupy funkcyjne: Tworzenie wirtualnych "wysp" z rozproszoną pamięcią i mocą obliczeniową do bardziej złożonych zadań.
+    Bogatsza orkiestracja wysp: dynamiczne wyspy logiczne są już używane; kolejnym krokiem jest głębsze planowanie, rozmieszczanie i koordynacja gridu nad istniejącym modelem wysp.
 
     Abstrakcyjne warstwy logiczne: Możliwość budowania bardziej skomplikowanych, wielopoziomowych systemów.
 

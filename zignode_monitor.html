@@ -3,821 +3,582 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZigNode Map</title>
+    <title>ZigNode Monitor</title>
     <style>
-        html, body {
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
+        html, body { height: 100vh; margin: 0; padding: 0; overflow: hidden; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #1a1a1a;
-            color: #e0e0e0;
-            display: flex;
-            flex-direction: column;
+            background: #1a1a1a; color: #e0e0e0;
+            display: flex; flex-direction: column;
         }
+        /* ---- top bar ---- */
         .top-bar {
-            background: #2d2d2d;
-            padding: 8px 20px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            flex-shrink: 0;
-            border-bottom: 1px solid #444;
-            z-index: 2000;
+            background: #2d2d2d; padding: 8px 20px;
+            display: flex; align-items: center; gap: 16px;
+            flex-shrink: 0; border-bottom: 1px solid #444; z-index: 2000;
         }
-        .top-bar h1 {
-            font-size: 1.2em;
-            margin: 0;
-            color: #e0e0e0;
-        }
-        .connection-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .top-bar h1 { font-size: 1.2em; margin: 0; color: #e0e0e0; }
         .top-bar input {
-            background: #3d3d3d;
-            border: 1px solid #555;
-            color: #e0e0e0;
-            padding: 6px 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            width: 120px;
+            background: #3d3d3d; border: 1px solid #555; color: #e0e0e0;
+            padding: 6px 10px; border-radius: 5px; font-size: 14px; width: 120px;
         }
         .top-bar button {
-            background: #6a4c93;
-            color: white;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+            background: #6a4c93; color: white; border: none;
+            padding: 6px 14px; border-radius: 5px; cursor: pointer;
+            font-size: 14px; transition: background .3s;
         }
-        
-        .top-bar button:hover {
-            background: #5a3c83;
-        }
+        .top-bar button:hover { background: #5a3c83; }
         .status {
-            padding: 6px 10px;
-            border-radius: 5px;
-            text-align: center;
-            margin-left: auto;
-            font-size: 14px;
+            padding: 5px 10px; border-radius: 5px; font-size: 13px; margin-left: auto;
         }
         .status.connected { background: #2d5a2d; color: #90ee90; }
-        .status.error { background: #5a2d2d; color: #ff9090; }
-        
+        .status.error     { background: #5a2d2d; color: #ff9090; }
+
+        /* ---- layout ---- */
+        .content-area { display: flex; flex: 1; overflow: hidden; }
+
+        /* ---- sidebar ---- */
+        .sidebar {
+            width: 240px; flex-shrink: 0;
+            background: #1e1e1e; border-right: 1px solid #3a3a3a;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .sidebar-header {
+            padding: 10px 14px; font-size: 11px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .05em;
+            color: #888; border-bottom: 1px solid #333; flex-shrink: 0;
+        }
+        .sidebar-list { overflow-y: auto; flex: 1; padding: 4px 0; }
+        .sidebar-node {
+            padding: 8px 12px; cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: background .15s;
+        }
+        .sidebar-node:hover { background: #2a2a2a; }
+        .sidebar-node.selected { background: #2a2040; border-left-color: #8a6db3; }
+        .sidebar-node.inactive { opacity: .5; }
+        .sn-top { display: flex; align-items: center; gap: 6px; }
+        .sn-name { font-size: 13px; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sn-id   { font-size: 10px; color: #777; font-family: monospace; margin-top: 2px; }
+        .sn-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+
+        /* ---- connection badges ---- */
+        .badge {
+            font-size: 10px; padding: 1px 6px; border-radius: 10px;
+            font-weight: 600; white-space: nowrap;
+        }
+        .badge-enc  { background: #1a3a33; color: #50e3c2; }
+        .badge-ws   { background: #1a2a3a; color: #6ab0ff; }
+        .badge-http { background: #2a2a3a; color: #9a8db3; }
+        .badge-lora { background: #2a1a3a; color: #d06aff; }
+        .badge-active   { background: #1a2d1a; color: #6dcc6d; }
+        .badge-inactive { background: #2d1a1a; color: #cc6d6d; }
+
+        /* ---- network canvas ---- */
         .network-container {
-            background: #1f1f1f;
-            position: relative;
-            overflow: auto;
-            flex-grow: 1;
+            background: #1f1f1f; position: relative;
+            overflow: auto; flex: 1;
         }
         .node {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            user-select: none;
-            display: flex;
-            justify-content: center;
+            position: absolute; width: 80px; height: 80px;
+            cursor: pointer; transition: transform .3s; user-select: none;
+            display: flex; justify-content: center;
         }
-        .node:hover {
-            transform: scale(1.1);
-            z-index: 100;
-        }
-        .node-svg {
-            filter: drop-shadow(0 0 5px rgba(106, 76, 147, 0.5));
-            width: 80px;
-            height: 80px;
-        }
-        
+        .node:hover { transform: scale(1.1); z-index: 100; }
+        .node.selected-node .node-svg { filter: drop-shadow(0 0 8px rgba(138, 109, 179, 0.9)); }
+        .node-svg { filter: drop-shadow(0 0 5px rgba(106,76,147,.5)); width: 80px; height: 80px; }
         .node-label {
-            position: absolute;
-            top: 85px;
-            background: rgba(45, 45, 45, 0.9);
-            padding: 4px 8px;
-            border-radius: 5px;
-            font-size: 10px;
-            border: 1px solid #555;
-            font-family: monospace;
-            white-space: nowrap;
+            position: absolute; top: 85px;
+            background: rgba(45,45,45,.9); padding: 3px 6px;
+            border-radius: 4px; font-size: 10px;
+            border: 1px solid #555; font-family: monospace; white-space: nowrap;
         }
-        
+
+        /* ---- tooltip ---- */
         .node-details {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(45, 45, 45, 0.9); 
-            backdrop-filter: blur(8px);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #555;
-            max-width: 320px;
-            min-width: 280px;
-            z-index: 10000;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-            display: none; 
-            pointer-events: none;
+            position: absolute; left: 50%; transform: translateX(-50%);
+            background: rgba(30,30,40,.97); backdrop-filter: blur(8px);
+            padding: 14px; border-radius: 8px; border: 1px solid #555;
+            max-width: 340px; min-width: 280px;
+            z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,.6);
+            display: none; pointer-events: none;
         }
-        
-        .node-details.visible {
-            display: block;
-        }
-        .node-details.pos-down {
-            top: 105px;
-        }
-        
-        .node-details.pos-up {
-            bottom: 90px;
-        }
-        
-        .node-details .node-id {
-            font-family: monospace;
-            font-weight: bold;
-            color: #8a6db3;
-            margin-bottom: 8px;
-            font-size: 12px;
-            word-break: break-all;
-        }
-        .node-details .detail-row {
-            margin-bottom: 4px;
-            display: flex;
-            align-items: flex-start;
-            font-size: 11px;
-        }
-        .node-details .detail-label {
-            font-weight: bold;
-            min-width: 80px;
-            color: #ccc;
-        }
-        .node-details .detail-value {
-            color: #e0e0e0;
-            word-break: break-word;
-        }
-        .status-active { color: #50e3c2; }
-        .status-inactive { color: #e35064; }
+        .node-details.visible { display: block; }
+        .node-details.pos-down { top: 105px; }
+        .node-details.pos-up   { bottom: 90px; }
+        .node-details .nd-id { font-family: monospace; font-weight: bold; color: #8a6db3; margin-bottom: 8px; font-size: 11px; word-break: break-all; }
+        .detail-row { margin-bottom: 4px; display: flex; align-items: flex-start; font-size: 11px; }
+        .detail-label { font-weight: bold; min-width: 80px; color: #aaa; }
+        .detail-value { color: #e0e0e0; word-break: break-word; }
+        .nd-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+
+        /* ---- connection lines ---- */
         .connection-line {
-            position: absolute;
-            background: #6a4c93;
-            height: 2px;
-            transform-origin: left center;
-            z-index: 1;
-            opacity: 0.7;
+            position: absolute; height: 2px;
+            transform-origin: left center; z-index: 1; opacity: .7;
         }
-        .connection-line.inactive {
-            background: #555;
-            opacity: 0.4;
-        }
+        .connection-line.inactive { opacity: .25; }
+        .cl-enc  { background: #50e3c2; }
+        .cl-ws   { background: #4a6caa; }
+        .cl-http { background: #6a4c93; }
+        .cl-lora { background: #a04ab3; }
+
+        /* ---- legend ---- */
         .legend {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(45, 45, 45, 0.9);
-            padding: 15px;
-            border-radius: 5px;
-            font-size: 12px;
-            border: 1px solid #555;
+            position: absolute; bottom: 10px; right: 10px;
+            background: rgba(30,30,40,.95); padding: 12px 15px;
+            border-radius: 6px; font-size: 11px; border: 1px solid #444;
             z-index: 1001;
         }
-        .legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 10px; }
-        .legend-color { width: 20px; height: 20px; border-radius: 3px; }
-        .main-node { background: #6a4c93; }
-        .direct-node { background: #4a6c93; }
-        .nested-node { background: #934a6c; }
+        .legend-item { display: flex; align-items: center; margin-bottom: 5px; gap: 8px; }
+        .legend-line { width: 28px; height: 2px; border-radius: 1px; }
+        .legend-dot  { width: 12px; height: 12px; border-radius: 3px; }
 
+        /* ---- context menu ---- */
         .context-menu {
-            position: absolute;
-            background: #2d2d2d;
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 8px;
-            min-width: 180px;
-            z-index: 20000;
-            display: none;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            position: absolute; background: #2d2d2d; border: 1px solid #555;
+            border-radius: 8px; padding: 6px; min-width: 180px;
+            z-index: 20000; display: none; box-shadow: 0 4px 20px rgba(0,0,0,.6);
         }
+        .context-menu-item { padding: 7px 12px; cursor: pointer; border-radius: 4px; font-size: 13px; }
+        .context-menu-item:hover { background: #3d3d3d; }
 
-        .context-menu-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: background 0.2s;
-            font-size: 13px;
-        }
-
-        .context-menu-item:hover {
-            background: #3d3d3d;
-        }
-
+        /* ---- function modal ---- */
         .function-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 30000;
+            position: fixed; inset: 0; background: rgba(0,0,0,.7);
+            display: none; justify-content: center; align-items: center; z-index: 30000;
         }
-
         .function-modal-content {
-            background: #2d2d2d;
-            border: 1px solid #555;
-            border-radius: 12px;
-            padding: 25px;
-            min-width: 400px;
-            max-width: 500px;
+            background: #2d2d2d; border: 1px solid #555;
+            border-radius: 12px; padding: 25px; min-width: 400px; max-width: 500px;
         }
-
-        .function-modal h3 {
-            margin: 0 0 20px 0;
-            color: #8a6db3;
-            font-size: 18px;
-        }
-
-        .function-modal .input-group {
-            margin-bottom: 15px;
-        }
-
-        .function-modal label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #ccc;
-        }
-
+        .function-modal h3 { margin: 0 0 18px; color: #8a6db3; font-size: 17px; }
+        .input-group { margin-bottom: 13px; }
+        .input-group label { display: block; margin-bottom: 4px; font-weight: 600; color: #ccc; font-size: 13px; }
         .function-modal input, .function-modal select, .function-modal textarea {
-            width: 100%;
-            background: #3d3d3d;
-            border: 1px solid #555;
-            color: #e0e0e0;
-            padding: 8px 10px;
-            border-radius: 5px;
-            font-size: 14px;
-            box-sizing: border-box;
+            width: 100%; background: #3d3d3d; border: 1px solid #555; color: #e0e0e0;
+            padding: 7px 10px; border-radius: 5px; font-size: 13px; box-sizing: border-box;
         }
-
-        .function-modal textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .function-modal .button-group {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-        }
-
+        .function-modal textarea { resize: vertical; min-height: 70px; }
+        .button-group { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
         .function-modal button {
-            background: #6a4c93;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background 0.3s;
+            background: #6a4c93; color: white; border: none;
+            padding: 7px 16px; border-radius: 5px; cursor: pointer; font-size: 13px;
         }
-
-        .function-modal button:hover {
-            background: #5a3c83;
-        }
-
-        .function-modal button.cancel {
-            background: #666;
-        }
-
-        .function-modal button.cancel:hover {
-            background: #555;
-        }
-
+        .function-modal button:hover { background: #5a3c83; }
+        .function-modal button.cancel { background: #555; }
+        .function-modal button.cancel:hover { background: #4a4a4a; }
         .function-result {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #555;
-            background: #1a1a1a;
-            font-family: monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-break: break-word;
+            margin-top: 13px; padding: 10px; border-radius: 5px;
+            border: 1px solid #555; background: #1a1a1a;
+            font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-word;
+            max-height: 200px; overflow-y: auto;
         }
-
-        .function-result.success {
-            border-color: #50e3c2;
-            color: #50e3c2;
-        }
-
-        .function-result.error {
-            border-color: #e35064;
-            color: #e35064;
-        }
+        .function-result.success { border-color: #50e3c2; color: #50e3c2; }
+        .function-result.error   { border-color: #e35064; color: #e35064; }
     </style>
 </head>
 <body>
-    
     <div class="top-bar">
-        <h1>ZigNode Map</h1>
-        <div class="connection-controls">
-            <label for="host">Host:</label> <input type="text" id="host" value="127.0.0.1">
-            <label for="port">Port:</label> <input type="text" id="port" value="8635">
+        <h1>⬡ ZigNode Monitor</h1>
+        <div style="display:flex;align-items:center;gap:10px">
+            <label>Host:</label><input type="text" id="host" value="127.0.0.1">
+            <label>Port:</label><input type="text" id="port" value="8635" style="width:70px">
             <button onclick="toggleConnection()">Connect</button>
-            <button onclick="refreshData()">Refresh</button>
-            <label><input type="checkbox" id="autoRefresh" checked> Auto</label>
+            <button onclick="refreshData()">↻</button>
+            <label style="font-size:13px"><input type="checkbox" id="autoRefresh" checked> Auto</label>
         </div>
         <div id="status" class="status">Disconnected</div>
     </div>
-    <div class="network-container" id="networkContainer">
-        <div class="legend">
-              <div class="legend-item"><div class="legend-color main-node"></div><span>Main Node</span></div>
-              <div class="legend-item"><div class="legend-color direct-node"></div><span>Direct Abut</span></div>
-              <div class="legend-item"><div class="legend-color nested-node"></div><span>Nested Abut</span></div>
+
+    <div class="content-area">
+        <!-- sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">Nodes (<span id="nodeCount">0</span>)</div>
+            <div class="sidebar-list" id="sidebarList"></div>
+        </div>
+
+        <!-- graph -->
+        <div class="network-container" id="networkContainer">
+            <div class="legend">
+                <div style="font-size:10px;color:#888;margin-bottom:6px;font-weight:600">CONNECTION</div>
+                <div class="legend-item"><div class="legend-line" style="background:#50e3c2"></div><span>🔒 Encrypted WS</span></div>
+                <div class="legend-item"><div class="legend-line" style="background:#4a6caa"></div><span>⚡ WebSocket</span></div>
+                <div class="legend-item"><div class="legend-line" style="background:#6a4c93"></div><span>HTTP</span></div>
+                <div class="legend-item"><div class="legend-line" style="background:#a04ab3"></div><span>📻 LoRa</span></div>
+                <div style="font-size:10px;color:#888;margin:8px 0 6px;font-weight:600">NODES</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#6a4c93"></div><span>This node</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#4a6c93"></div><span>Direct abut</span></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#934a6c"></div><span>Nested abut</span></div>
+            </div>
         </div>
     </div>
 
-            <div class="context-menu" id="contextMenu">
+    <div class="context-menu" id="contextMenu">
         <div id="contextMenuItems"></div>
-        <div class="context-menu-item" onclick="executeFunction('custom')">Custom Function</div>
+        <div class="context-menu-item" onclick="executeFunction('custom')">⌨ Custom call…</div>
     </div>
 
     <div class="function-modal" id="functionModal">
         <div class="function-modal-content">
             <h3 id="modalTitle">Execute Function</h3>
             <div class="input-group">
-                <label for="targetNodeId">Target Node ID:</label>
+                <label>Target Node ID:</label>
                 <input type="text" id="targetNodeId" readonly>
             </div>
             <div class="input-group">
-                <label for="functionName">Function:</label>
-                <input type="text" id="functionName" placeholder="Function name">
+                <label>Function:</label>
+                <input type="text" id="functionName" placeholder="function name">
             </div>
             <div class="input-group">
-                <label for="functionParams">Arguments (JSON array):</label>
-                <textarea id="functionParams" placeholder='["arg1", "arg2"] or empty for no args'></textarea>
+                <label>Args (JSON array):</label>
+                <textarea id="functionParams" placeholder='["arg1"] or empty'></textarea>
             </div>
             <div class="input-group">
-                <label for="functionKwargs">Keyword Arguments (JSON object):</label>
-                <textarea id="functionKwargs" placeholder='{"key1": "value1", "key2": "value2"} or empty'></textarea>
+                <label>Kwargs (JSON object):</label>
+                <textarea id="functionKwargs" placeholder='{"key": "val"} or empty'></textarea>
             </div>
             <div class="button-group">
                 <button class="cancel" onclick="closeFunctionModal()">Cancel</button>
                 <button onclick="sendFunction()">Execute</button>
             </div>
-            <div id="functionResult" class="function-result" style="display: none;"></div>
+            <div id="functionResult" class="function-result" style="display:none"></div>
         </div>
     </div>
 
     <script>
-        let isConnected = false;
-        let refreshInterval = null;
-        let currentSelectedNode = null;
-        let networkData = null;
+        let isConnected = false, refreshInterval = null;
+        let currentSelectedNode = null, networkData = null;
+        let highlightedNode = null;
 
-        function toggleConnection() { 
-            if (isConnected) disconnect(); 
-            else connect(); 
+        // ── connection type ─────────────────────────────────────────────
+        function connType(nodeData) {
+            if (!nodeData) return 'http';
+            if (nodeData.encrypted_ws_enabled) return 'enc';
+            if (nodeData.lora_enabled)         return 'lora';
+            if (nodeData.ws_enabled)            return 'ws';
+            return 'http';
         }
-        
+        function connLabel(type) {
+            return { enc: '🔒 Enc WS', ws: '⚡ WS', lora: '📻 LoRa', http: 'HTTP' }[type] || 'HTTP';
+        }
+        function connBadgeClass(type) {
+            return { enc: 'badge-enc', ws: 'badge-ws', lora: 'badge-lora', http: 'badge-http' }[type] || 'badge-http';
+        }
+        function connLineClass(type) {
+            return { enc: 'cl-enc', ws: 'cl-ws', lora: 'cl-lora', http: 'cl-http' }[type] || 'cl-http';
+        }
+
+        // ── core ─────────────────────────────────────────────────────────
+        function toggleConnection() { isConnected ? disconnect() : connect(); }
+
         function connect() {
-            const host = document.getElementById('host').value, port = document.getElementById('port').value;
-            if (!host || !port) { updateStatus('Host and Port required', 'error'); return; }
+            const h = document.getElementById('host').value, p = document.getElementById('port').value;
+            if (!h || !p) { updateStatus('Host/port required', 'error'); return; }
             isConnected = true;
-            document.querySelector('.connection-controls button').textContent = 'Disconnect';
+            document.querySelector('.connection-controls button, .top-bar button').textContent = 'Disconnect';
             refreshData();
-            if (document.getElementById('autoRefresh').checked) {
+            if (document.getElementById('autoRefresh').checked)
                 refreshInterval = setInterval(refreshData, 5000);
-            }
         }
-        
+
         function disconnect() {
             if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
             isConnected = false;
-            document.querySelector('.connection-controls button').textContent = 'Connect';
+            document.querySelectorAll('.top-bar button')[0].textContent = 'Connect';
             updateStatus('Disconnected', 'error');
-            clearNetwork();
+            clearNetwork(); updateSidebar(null);
         }
-        
-        function updateStatus(message, type) {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = message;
-            statusEl.className = `status ${type}`;
+
+        function updateStatus(msg, type) {
+            const el = document.getElementById('status');
+            el.textContent = msg; el.className = 'status ' + type;
         }
-        
+
         async function refreshData() {
             if (!isConnected) return;
-            const host = document.getElementById('host').value, port = document.getElementById('port').value;
-            const url = `http://${host}:${port}/status`;
+            const h = document.getElementById('host').value, p = document.getElementById('port').value;
             try {
-                const response = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, mode: 'cors', cache: 'no-cache' });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const data = await response.json();
-                if (!data.id) throw new Error('Invalid data format');
+                const r = await fetch(`http://${h}:${p}/status`, { cache: 'no-cache', mode: 'cors' });
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                const data = await r.json();
+                if (!data.id) throw new Error('Invalid response');
                 networkData = data;
-                updateStatus(`Updated: ${new Date().toLocaleTimeString()}`, 'connected');
+                updateStatus(`${new Date().toLocaleTimeString()}`, 'connected');
                 renderNetwork(data);
-            } catch (error) {
-                console.error('Refresh Error:', error);
-                updateStatus(`Error: ${error.message}`, 'error');
+                updateSidebar(data);
+            } catch(e) {
+                updateStatus(`Error: ${e.message}`, 'error');
                 disconnect();
             }
         }
-        
-        function clearNetwork() {
-            const container = document.getElementById('networkContainer');
-            Array.from(container.children).forEach(child => {
-                if (!child.classList.contains('legend')) child.remove();
+
+        // ── sidebar ───────────────────────────────────────────────────────
+        function updateSidebar(data) {
+            const list = document.getElementById('sidebarList');
+            const count = document.getElementById('nodeCount');
+            list.innerHTML = '';
+            if (!data) { count.textContent = '0'; return; }
+
+            const allNodes = [];
+            // main node
+            allNodes.push({ id: data.id, d: data, role: 'main' });
+            // direct abuts
+            Object.entries(data.abut_nodes || {}).forEach(([id, d]) => {
+                allNodes.push({ id, d, role: 'direct' });
+                // nested
+                Object.entries(d?.abut_nodes || {}).forEach(([nid, nd]) => {
+                    if (!allNodes.find(n => n.id === nid))
+                        allNodes.push({ id: nid, d: nd, role: 'nested' });
+                });
+            });
+
+            count.textContent = allNodes.length;
+
+            allNodes.forEach(({ id, d, role }) => {
+                const active = d.active === undefined ? true : d.active;
+                const ct = connType(d);
+                const div = document.createElement('div');
+                div.className = 'sidebar-node' + (active ? '' : ' inactive') + (id === highlightedNode ? ' selected' : '');
+                div.dataset.nodeId = id;
+                div.innerHTML = `
+                    <div class="sn-top">
+                        <div class="sn-name">${d.hostname || d.myname || id.slice(0,8)}</div>
+                        <span class="badge ${connBadgeClass(ct)}">${connLabel(ct)}</span>
+                    </div>
+                    <div class="sn-id">${id.slice(0,8)}…</div>
+                    <div class="sn-meta">
+                        <span class="badge ${active ? 'badge-active' : 'badge-inactive'}">${active ? 'active' : 'offline'}</span>
+                        ${d.version ? `<span style="font-size:10px;color:#666">v${d.version}</span>` : ''}
+                        ${role === 'nested' ? '<span style="font-size:10px;color:#666">nested</span>' : ''}
+                    </div>`;
+                div.addEventListener('click', () => selectNode(id));
+                list.appendChild(div);
             });
         }
-        
+
+        function selectNode(id) {
+            highlightedNode = id;
+            // update sidebar highlights
+            document.querySelectorAll('.sidebar-node').forEach(el =>
+                el.classList.toggle('selected', el.dataset.nodeId === id));
+            // highlight in graph
+            document.querySelectorAll('.node').forEach(el =>
+                el.classList.toggle('selected-node', el.dataset.nodeId === id));
+            // show detail panel
+            currentSelectedNode = id;
+        }
+
+        // ── graph ─────────────────────────────────────────────────────────
+        function clearNetwork() {
+            Array.from(document.getElementById('networkContainer').children)
+                .forEach(c => { if (!c.classList.contains('legend')) c.remove(); });
+        }
+
         function renderNetwork(data) {
             clearNetwork();
-            const container = document.getElementById('networkContainer');
-            const containerRect = container.getBoundingClientRect();
-            const centerX = containerRect.width / 2, centerY = containerRect.height / 2;
-            const nodePositions = new Map();
-            
-            nodePositions.set(data.id, { x: centerX, y: centerY, type: 'main' });
-            
-            const directAbuts = Object.values(data.abut_nodes || {});
-            const directRadius = Math.min(containerRect.width, containerRect.height) / 4;
-            
-            directAbuts.forEach((node, index) => {
-                const angle = (index * 2 * Math.PI) / directAbuts.length;
-                nodePositions.set(node.id, { x: centerX + Math.cos(angle) * directRadius, y: centerY + Math.sin(angle) * directRadius, type: 'direct' });
+            const cont = document.getElementById('networkContainer');
+            const cr = cont.getBoundingClientRect();
+            const cx = cr.width / 2, cy = cr.height / 2;
+            const pos = new Map();
+
+            pos.set(data.id, { x: cx, y: cy, type: 'main' });
+
+            const directs = Object.values(data.abut_nodes || {});
+            const r1 = Math.min(cr.width, cr.height) / 4;
+            directs.forEach((n, i) => {
+                const a = (i * 2 * Math.PI) / directs.length;
+                pos.set(n.id, { x: cx + Math.cos(a) * r1, y: cy + Math.sin(a) * r1, type: 'direct' });
             });
-            
-            const nestedRadius = Math.min(containerRect.width, containerRect.height) / 2.5;
-            directAbuts.forEach((parent, parentIndex) => {
-                if (parent && parent.abut_nodes) {
-                    const nestedAbuts = Object.values(parent.abut_nodes);
-                    nestedAbuts.forEach((node, index) => {
-                        if (!nodePositions.has(node.id)) {
-                            const parentAngle = (parentIndex * 2 * Math.PI) / directAbuts.length;
-                            const nestedAngle = parentAngle + (index - nestedAbuts.length / 2 + 0.5) * 0.3;
-                            nodePositions.set(node.id, { x: centerX + Math.cos(nestedAngle) * nestedRadius, y: centerY + Math.sin(nestedAngle) * nestedRadius, type: 'nested' });
-                        }
-                    });
-                }
-            });
-            drawConnections(data, nodePositions);
-            
-            nodePositions.forEach((pos, id) => {
-                let nodeData = {};
-                if (id === data.id) {
-                    nodeData = data;
-                } else if (data.abut_nodes[id]) {
-                    nodeData = data.abut_nodes[id];
-                } else {
-                    for (const parent of directAbuts) {
-                        if (parent?.abut_nodes?.[id]) {
-                            nodeData = parent.abut_nodes[id];
-                            break;
-                        }
+
+            const r2 = Math.min(cr.width, cr.height) / 2.5;
+            directs.forEach((par, pi) => {
+                Object.values(par?.abut_nodes || {}).forEach((n, ni, arr) => {
+                    if (!pos.has(n.id)) {
+                        const pa = (pi * 2 * Math.PI) / directs.length;
+                        const na = pa + (ni - arr.length / 2 + .5) * .3;
+                        pos.set(n.id, { x: cx + Math.cos(na) * r2, y: cy + Math.sin(na) * r2, type: 'nested' });
                     }
-                }
-                drawNode(id, nodeData, pos);
+                });
+            });
+
+            // connections
+            Object.entries(data.abut_nodes || {}).forEach(([id, n]) => {
+                const np = pos.get(n.id);
+                if (np) drawLine(pos.get(data.id), np, cont, n.active, connType(n));
+                Object.values(n?.abut_nodes || {}).forEach(nn => {
+                    const nnp = pos.get(nn.id);
+                    if (nnp) drawLine(np, nnp, cont, nn.active, connType(nn));
+                });
+            });
+
+            // nodes
+            pos.forEach((p, id) => {
+                let d = id === data.id ? data : (data.abut_nodes[id] || null);
+                if (!d) for (const par of directs) if (par?.abut_nodes?.[id]) { d = par.abut_nodes[id]; break; }
+                drawNode(id, d || {}, p);
             });
         }
-        
-        function drawConnections(data, nodePositions) {
-            const container = document.getElementById('networkContainer');
-            const mainPos = nodePositions.get(data.id);
-            
-            Object.values(data.abut_nodes || {}).forEach(node => {
-                const nodePos = nodePositions.get(node.id);
-                if (nodePos) createConnectionLine(mainPos, nodePos, container, node.active);
-                
-                if (node.abut_nodes) {
-                    Object.values(node.abut_nodes).forEach(nestedNode => {
-                        const nestedPos = nodePositions.get(nestedNode.id);
-                        if(nestedPos) createConnectionLine(nodePos, nestedPos, container, nestedNode.active);
-                    });
-                }
-            });
-        }
-        
-        function createConnectionLine(pos1, pos2, container, isActive = true) {
+
+        function drawLine(p1, p2, cont, active = true, ct = 'http') {
+            if (!p1 || !p2) return;
             const line = document.createElement('div');
-            line.className = 'connection-line' + (isActive ? '' : ' inactive');
-            const dx = pos2.x - pos1.x, dy = pos2.y - pos1.y;
-            const length = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx);
-            line.style.width = `${length}px`;
-            line.style.left = `${pos1.x}px`;
-            line.style.top = `${pos1.y}px`;
-            line.style.transform = `rotate(${angle}rad)`;
-            container.appendChild(line);
+            const dx = p2.x - p1.x, dy = p2.y - p1.y;
+            line.className = `connection-line ${connLineClass(ct)}${active ? '' : ' inactive'}`;
+            line.style.cssText = `width:${Math.sqrt(dx*dx+dy*dy)}px;left:${p1.x}px;top:${p1.y}px;transform:rotate(${Math.atan2(dy,dx)}rad)`;
+            cont.appendChild(line);
         }
 
-        function drawNode(nodeId, nodeData, position) {
-            const container = document.getElementById('networkContainer');
+        function drawNode(nodeId, nodeData, pos) {
+            const cont = document.getElementById('networkContainer');
             const node = document.createElement('div');
-            node.className = 'node';
-            node.style.left = (position.x - 40) + 'px';
-            node.style.top = (position.y - 40) + 'px';
+            node.className = 'node' + (nodeId === highlightedNode ? ' selected-node' : '');
+            node.style.cssText = `left:${pos.x-40}px;top:${pos.y-40}px`;
             node.dataset.nodeId = nodeId;
-            
-            const nodeColor = position.type === 'main' ? '#6a4c93' : 
-                              position.type === 'direct' ? '#4a6c93' : '#934a6c';
 
-            const formatAddress = (data) => {
-                if (data.addresses && data.addresses.length > 0) {
-                    return data.addresses[0].join(':');
-                }
-                if (data.ip) {
-                    return data.ip;
-                }
-                return 'N/A';
-            };
+            const color = pos.type === 'main' ? '#6a4c93' : pos.type === 'direct' ? '#4a6c93' : '#934a6c';
+            const active = nodeData.active === undefined ? true : nodeData.active;
+            const ct = connType(nodeData);
+            const addr = nodeData.addresses?.length ? nodeData.addresses[0].join(':') : (nodeData.ip || '');
 
-            const formatLastSeen = (timestamp) => {
-                if (!timestamp) return 'N/A';
-                const now = Date.now() / 1000;
-                const secondsAgo = Math.round(now - timestamp);
-                if (secondsAgo < 60) return `${secondsAgo} seconds ago`;
-                if (secondsAgo < 3600) return `${Math.round(secondsAgo / 60)} minutes ago`;
-                return new Date(timestamp * 1000).toLocaleString();
-            };
-            
-            const isActive = nodeData.active === undefined ? true : nodeData.active;
-            const activeClass = isActive ? 'status-active' : 'status-inactive';
-            const activeText = isActive ? 'Active' : 'Inactive';
-            
+            const capsBadges = (nodeData.capabilities || []).slice(0,6).map(c =>
+                `<span style="font-size:9px;background:#333;padding:1px 4px;border-radius:3px;margin:1px">${c}</span>`
+            ).join('');
+
             node.innerHTML = `
                 <svg class="node-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="${nodeColor}" stroke="#000" stroke-width="1.5" d="M4.75 8L12 4l7.25 4v8L12 20l-7.25-4V8Z"/>
+                    <path fill="${color}" stroke="#000" stroke-width="1.5" d="M4.75 8L12 4l7.25 4v8L12 20l-7.25-4V8Z"/>
                 </svg>
-                <div class="node-label">${nodeId.substring(0,8)}...</div>
+                <div class="node-label">${nodeData.hostname || nodeId.slice(0,8)}</div>
                 <div class="node-details">
-                    <div class="node-id">${nodeId}</div>
-                    <div class="detail-row"><span class="detail-label">Name:</span><span class="detail-value">${nodeData.myname || 'N/A'}</span></div>
-                    <div class="detail-row"><span class="detail-label">Hostname:</span><span class="detail-value">${nodeData.hostname || 'N/A'}</span></div>
-                    <div class="detail-row"><span class="detail-label">Address:</span><span class="detail-value">${formatAddress(nodeData)}</span></div>
-                    <div class="detail-row"><span class="detail-label">Version:</span><span class="detail-value">${nodeData.version || 'N/A'}</span></div>
-                    <div class="detail-row"><span class="detail-label">Platform:</span><span class="detail-value">${nodeData.platform || 'N/A'}</span></div>
-                    <div class="detail-row"><span class="detail-label">Status:</span><span class="detail-value ${activeClass}">${activeText}</span></div>
-                    <div class="detail-row"><span class="detail-label">Last Seen:</span><span class="detail-value">${formatLastSeen(nodeData.last_seen)}</span></div>
-                    <div class="detail-row"><span class="detail-label">Capabilities:</span><span class="detail-value">${nodeData.capabilities ? nodeData.capabilities.join(', ') : 'N/A'}</span></div>
-                </div>
-            `;
-            container.appendChild(node);
-            
-            const tooltip = node.querySelector('.node-details');
-            node.addEventListener('mouseenter', (e) => {
-                positionTooltip(e.currentTarget, tooltip);
-            });
-            node.addEventListener('mouseleave', (e) => {
-                if (!e.relatedTarget || !e.relatedTarget.closest('.context-menu')) {
-                    tooltip.classList.remove('visible', 'pos-up', 'pos-down');
-                }
-            });
+                    <div class="nd-id">${nodeId}</div>
+                    <div class="nd-badges">
+                        <span class="badge ${connBadgeClass(ct)}">${connLabel(ct)}</span>
+                        <span class="badge ${active ? 'badge-active' : 'badge-inactive'}">${active ? 'active' : 'offline'}</span>
+                        ${nodeData.lora_enabled ? '<span class="badge badge-lora">📻 LoRa</span>' : ''}
+                    </div>
+                    <div style="margin-top:8px">
+                    <div class="detail-row"><span class="detail-label">Name</span><span class="detail-value">${nodeData.myname || '—'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Hostname</span><span class="detail-value">${nodeData.hostname || '—'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Address</span><span class="detail-value">${addr || '—'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Version</span><span class="detail-value">${nodeData.version || '—'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Platform</span><span class="detail-value">${nodeData.platform || '—'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Last seen</span><span class="detail-value">${fmtTime(nodeData.last_seen)}</span></div>
+                    ${nodeData.capabilities ? `<div class="detail-row"><span class="detail-label">Caps</span><span class="detail-value" style="display:flex;flex-wrap:wrap;gap:2px">${capsBadges}</span></div>` : ''}
+                    </div>
+                </div>`;
 
-            node.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                showContextMenu(e, nodeId);
+            const tip = node.querySelector('.node-details');
+            node.addEventListener('mouseenter', () => positionTip(node, tip));
+            node.addEventListener('mouseleave', e => {
+                if (!e.relatedTarget?.closest('.context-menu'))
+                    tip.classList.remove('visible','pos-up','pos-down');
             });
-
-            node.addEventListener('click', (e) => {
-                if (e.detail === 2) {
-                    currentSelectedNode = nodeId;
-                    executeFunction('custom');
-                }
-            });
-        }
-        
-        function positionTooltip(nodeElement, tooltipElement) {
-            const nodeRect = nodeElement.getBoundingClientRect();
-            const containerRect = document.getElementById('networkContainer').getBoundingClientRect();
-            
-            tooltipElement.style.visibility = 'hidden';
-            tooltipElement.classList.add('visible');
-            const tooltipHeight = tooltipElement.offsetHeight;
-            tooltipElement.classList.remove('visible');
-            tooltipElement.style.visibility = '';
-            const spaceBelow = containerRect.bottom - nodeRect.bottom;
-            if (spaceBelow < tooltipHeight + 20) {
-                tooltipElement.classList.add('pos-up');
-            } else {
-                tooltipElement.classList.add('pos-down');
-            }
-            
-            tooltipElement.classList.add('visible');
+            node.addEventListener('contextmenu', e => { e.preventDefault(); showCtxMenu(e, nodeId); });
+            node.addEventListener('click', e => { if (e.detail === 2) { currentSelectedNode = nodeId; executeFunction('custom'); } else selectNode(nodeId); });
+            cont.appendChild(node);
         }
 
-        function showContextMenu(e, nodeId) {
+        function positionTip(nodeEl, tip) {
+            const nr = nodeEl.getBoundingClientRect();
+            const cr = document.getElementById('networkContainer').getBoundingClientRect();
+            tip.style.visibility = 'hidden'; tip.classList.add('visible');
+            const h = tip.offsetHeight; tip.classList.remove('visible'); tip.style.visibility = '';
+            tip.classList.add(cr.bottom - nr.bottom < h + 20 ? 'pos-up' : 'pos-down', 'visible');
+        }
+
+        function fmtTime(ts) {
+            if (!ts) return '—';
+            const s = Math.round(Date.now()/1000 - ts);
+            if (s < 60) return `${s}s ago`;
+            if (s < 3600) return `${Math.round(s/60)}m ago`;
+            return new Date(ts*1000).toLocaleTimeString();
+        }
+
+        // ── context menu ──────────────────────────────────────────────────
+        function showCtxMenu(e, nodeId) {
             currentSelectedNode = nodeId;
-            const contextMenu = document.getElementById('contextMenu');
-            const contextMenuItems = document.getElementById('contextMenuItems');
-            
-            const nodeData = getNodeData(nodeId);
-            const capabilities = nodeData.capabilities || [];
-            
-            contextMenuItems.innerHTML = '';
-            capabilities.forEach(capability => {
-                const item = document.createElement('div');
-                item.className = 'context-menu-item';
-                item.textContent = capability;
-                item.onclick = () => executeFunction('capability', capability);
-                contextMenuItems.appendChild(item);
-            });
-            
-            contextMenu.style.display = 'block';
-            contextMenu.style.left = e.pageX + 'px';
-            contextMenu.style.top = e.pageY + 'px';
+            const menu = document.getElementById('contextMenu');
+            const items = document.getElementById('contextMenuItems');
+            const caps = (getNodeData(nodeId).capabilities || []);
+            items.innerHTML = caps.map(c =>
+                `<div class="context-menu-item" onclick="executeFunction('capability','${c}')">${c}</div>`
+            ).join('');
+            menu.style.cssText = `display:block;left:${e.pageX}px;top:${e.pageY}px`;
         }
 
-        function hideContextMenu() {
-            document.getElementById('contextMenu').style.display = 'none';
-        }
+        function hideCtxMenu() { document.getElementById('contextMenu').style.display = 'none'; }
 
-        function getNodeData(nodeId) {
+        function getNodeData(id) {
             if (!networkData) return {};
-            
-            if (nodeId === networkData.id) {
-                return networkData;
-            }
-            
-            if (networkData.abut_nodes && networkData.abut_nodes[nodeId]) {
-                return networkData.abut_nodes[nodeId];
-            }
-            
-            const directAbuts = Object.values(networkData.abut_nodes || {});
-            for (const parent of directAbuts) {
-                if (parent?.abut_nodes?.[nodeId]) {
-                    return parent.abut_nodes[nodeId];
-                }
-            }
-            
+            if (id === networkData.id) return networkData;
+            if (networkData.abut_nodes?.[id]) return networkData.abut_nodes[id];
+            for (const p of Object.values(networkData.abut_nodes || {}))
+                if (p?.abut_nodes?.[id]) return p.abut_nodes[id];
             return {};
         }
 
-        function executeFunction(type, predefinedFunction = null) {
-            hideContextMenu();
-            
-            const modal = document.getElementById('functionModal');
-            const titleEl = document.getElementById('modalTitle');
-            const nodeIdEl = document.getElementById('targetNodeId');
-            const functionNameEl = document.getElementById('functionName');
-            const paramsEl = document.getElementById('functionParams');
-            const kwargsEl = document.getElementById('functionKwargs');
-            const resultEl = document.getElementById('functionResult');
-            
-            nodeIdEl.value = currentSelectedNode;
-            resultEl.style.display = 'none';
-            resultEl.textContent = '';
-            resultEl.className = 'function-result';
-            
-            if (type === 'capability') {
-                titleEl.textContent = `Execute: ${predefinedFunction}`;
-                functionNameEl.value = predefinedFunction;
-                paramsEl.value = '[]';
-                kwargsEl.value = '{}';
-            } else {
-                titleEl.textContent = 'Execute Custom Function';
-                functionNameEl.value = '';
-                paramsEl.value = '[]';
-                kwargsEl.value = '{}';
-            }
-            
-            modal.style.display = 'flex';
+        // ── function modal ────────────────────────────────────────────────
+        function executeFunction(type, fn = null) {
+            hideCtxMenu();
+            document.getElementById('targetNodeId').value = currentSelectedNode;
+            document.getElementById('modalTitle').textContent = fn ? `Execute: ${fn}` : 'Custom Function';
+            document.getElementById('functionName').value = fn || '';
+            document.getElementById('functionParams').value = '[]';
+            document.getElementById('functionKwargs').value = '{}';
+            document.getElementById('functionResult').style.display = 'none';
+            document.getElementById('functionModal').style.display = 'flex';
         }
 
-        function closeFunctionModal() {
-            document.getElementById('functionModal').style.display = 'none';
-        }
+        function closeFunctionModal() { document.getElementById('functionModal').style.display = 'none'; }
 
         async function sendFunction() {
             const nodeId = document.getElementById('targetNodeId').value;
-            const functionName = document.getElementById('functionName').value.trim();
-            const argsText = document.getElementById('functionParams').value.trim();
-            const kwargsText = document.getElementById('functionKwargs').value.trim();
-            const resultEl = document.getElementById('functionResult');
-            
-            if (!functionName) {
-                showResult('Function name is required', 'error');
-                return;
-            }
-            
-            const host = document.getElementById('host').value;
-            const port = document.getElementById('port').value;
-            
+            const fn = document.getElementById('functionName').value.trim();
+            const argsRaw = document.getElementById('functionParams').value.trim();
+            const kwargsRaw = document.getElementById('functionKwargs').value.trim();
+            const h = document.getElementById('host').value, p = document.getElementById('port').value;
+            if (!fn) { showResult('Function name required', 'error'); return; }
+            let args = [], kwargs = {};
+            try { if (argsRaw)   args   = JSON.parse(argsRaw); }   catch(e) { showResult(`Args error: ${e.message}`, 'error'); return; }
+            try { if (kwargsRaw) kwargs = JSON.parse(kwargsRaw); } catch(e) { showResult(`Kwargs error: ${e.message}`, 'error'); return; }
+            showResult('…', 'info');
             try {
-                let args = [];
-                let kwargs = {};
-                
-                if (argsText) {
-                    try {
-                        args = JSON.parse(argsText);
-                        if (!Array.isArray(args)) {
-                            throw new Error('Args must be an array');
-                        }
-                    } catch (e) {
-                        showResult(`Invalid args format: ${e.message}`, 'error');
-                        return;
-                    }
-                }
-                
-                if (kwargsText) {
-                    try {
-                        kwargs = JSON.parse(kwargsText);
-                        if (typeof kwargs !== 'object' || Array.isArray(kwargs)) {
-                            throw new Error('Kwargs must be an object');
-                        }
-                    } catch (e) {
-                        showResult(`Invalid kwargs format: ${e.message}`, 'error');
-                        return;
-                    }
-                }
-                
-                let payload = {
-                    call: functionName,
-                    args: args,
-                    id: nodeId
-                };
-                
-                if (Object.keys(kwargs).length > 0) {
-                    payload.kwargs = kwargs;
-                }
-                
-                showResult('Executing function...', 'info');
-                
-                const response = await fetch(`http://${host}:${port}/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    mode: 'cors',
+                const payload = { call: fn, args, id: nodeId };
+                if (Object.keys(kwargs).length) payload.kwargs = kwargs;
+                const r = await fetch(`http://${h}:${p}/`, {
+                    method: 'POST', mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                
-                const result = await response.text();
-                let parsedResult;
-                
-                try {
-                    parsedResult = JSON.parse(result);
-                } catch (e) {
-                    parsedResult = result;
-                }
-                
-                if (response.ok) {
-                    showResult(JSON.stringify(parsedResult, null, 2), 'success');
-                } else {
-                    showResult(`Error: ${parsedResult.error || parsedResult}`, 'error');
-                }
-            } catch (error) {
-                showResult(`Network Error: ${error.message}`, 'error');
-            }
+                const txt = await r.text();
+                let parsed; try { parsed = JSON.parse(txt); } catch { parsed = txt; }
+                showResult(JSON.stringify(parsed, null, 2), r.ok ? 'success' : 'error');
+            } catch(e) { showResult(`Network: ${e.message}`, 'error'); }
         }
 
-        function showResult(message, type) {
-            const resultEl = document.getElementById('functionResult');
-            resultEl.textContent = message;
-            resultEl.className = `function-result ${type}`;
-            resultEl.style.display = 'block';
+        function showResult(msg, type) {
+            const el = document.getElementById('functionResult');
+            el.textContent = msg; el.className = 'function-result ' + type; el.style.display = 'block';
         }
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.context-menu') && !e.target.closest('.node')) {
-                hideContextMenu();
-            }
+        // ── events ────────────────────────────────────────────────────────
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.context-menu') && !e.target.closest('.node')) hideCtxMenu();
         });
-
-        document.getElementById('functionModal').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                closeFunctionModal();
-            }
+        document.getElementById('functionModal').addEventListener('click', e => {
+            if (e.target === e.currentTarget) closeFunctionModal();
         });
-
         document.getElementById('autoRefresh').addEventListener('change', () => {
-            if (isConnected) {
-                if (document.getElementById('autoRefresh').checked) {
-                    if(!refreshInterval) refreshInterval = setInterval(refreshData, 5000);
-                } else if(refreshInterval) {
-                    clearInterval(refreshInterval); refreshInterval = null;
-                }
-            }
+            if (!isConnected) return;
+            if (document.getElementById('autoRefresh').checked) {
+                if (!refreshInterval) refreshInterval = setInterval(refreshData, 5000);
+            } else if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
         });
-        
-        document.querySelectorAll('.connection-controls input').forEach(input => {
-            input.addEventListener('keypress', e => { if (e.key === 'Enter') toggleConnection(); });
-        });
-
+        document.querySelectorAll('.top-bar input').forEach(i =>
+            i.addEventListener('keypress', e => { if (e.key === 'Enter') toggleConnection(); }));
         window.addEventListener('load', () => {
-            const host = document.getElementById('host').value;
-            const port = document.getElementById('port').value;
-            if (host && port) {
-                connect();
-            }
+            if (document.getElementById('host').value) connect();
         });
     </script>
 </body>

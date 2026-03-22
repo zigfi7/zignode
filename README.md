@@ -71,6 +71,8 @@ Zignode creates a peer-to-peer network where all nodes are equal:
         If the function is not found anywhere on the network, an error is returned.
 
 The result: a reliable, mesh RPC network with no single point of failure.
+
+In current deployments, Zignode also acts as the control-plane for dynamic logical islands: the physical node graph can change underneath, while the logical function group remains stable and reusable for orchestration layers such as Ziginput.
 📦 Installation and Usage
 
 Requirements: Python 3.8+
@@ -145,7 +147,7 @@ http://localhost:8635/
 
     Distributed Memory: Mechanisms for sharing state and data between nodes.
 
-    Functional Groups: Creating virtual "islands" with distributed memory and computing power for more complex tasks.
+    Richer Island Orchestration: Dynamic logical islands are already in use; the next step is deeper scheduling, placement, and grid-level coordination on top of the existing island model.
 
     Abstract Logical Layers: The ability to build more complex, multi-level systems.
 

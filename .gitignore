@@ -1,3 +1,9 @@
 venv/
-libs/__pycache__
+libs/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+zignode_lora.config
+zignode_lora.config.local
+*.bak-*
 git_c_p.sh

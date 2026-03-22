@@ -1,0 +1,16 @@
+[Unit]
+Description=Zignode — distributed node daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+User=zigfi
+WorkingDirectory=/opt/zignode
+ExecStart=/usr/bin/python3 /opt/zignode/libs/zignoded.py
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
